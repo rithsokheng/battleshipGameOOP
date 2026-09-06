@@ -1,0 +1,612 @@
+/* ============================================================
+   Battleship: FLEET COMMAND — theme stylesheet
+   Deep navy command-center palette, cyan accent, gold highlight.
+   Applies automatically to whatever screen is the Scene root
+   (JavaFX tags the scene root with the ".root" style class).
+   ============================================================ */
+
+.root {
+    -fx-background-color: linear-gradient(to bottom right, #030810, #071528, #0d2540);
+    -fx-accent: #44b8ff;
+    -fx-font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ---------- Typography ---------- */
+
+.app-title {
+    -fx-letter-spacing: 1.5px;
+    -fx-font-family: "Arial Black", Arial, sans-serif;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd166;
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.5), 28, 0.35, 0, 0);
+}
+
+.app-subtitle {
+    -fx-letter-spacing: 4px;
+    -fx-text-fill: #8fafc7;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-opacity: 0.85;
+}
+
+.section-heading {
+    -fx-letter-spacing: 1px;
+    -fx-font-family: "Arial Black", Arial, sans-serif;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd166;
+}
+
+.info-text {
+    -fx-text-fill: #c7d9e8;
+    -fx-font-size: 12px;
+}
+
+.dim-text {
+    -fx-text-fill: #8fafc7;
+    -fx-font-size: 11.5px;
+}
+
+.accent-text {
+    -fx-letter-spacing: 0.6px;
+    -fx-text-fill: #44b8ff;
+    -fx-font-weight: bold;
+}
+
+.danger-text {
+    -fx-text-fill: #ff5c5c;
+    -fx-font-weight: bold;
+}
+
+/* ---------- Buttons ---------- */
+
+.primary-button {
+    -fx-letter-spacing: 1px;
+    -fx-background-color: linear-gradient(to bottom, #2c8fe0, #1360a0);
+    -fx-text-fill: #f5f7fa;
+    -fx-font-weight: bold;
+    -fx-background-radius: 27;
+    -fx-border-radius: 27;
+    -fx-border-width: 1.5;
+    -fx-border-color: rgba(99, 196, 255, 0.55);
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(4,12,22,0.55), 14, 0.15, 0, 5);
+}
+.primary-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #3ea3f2, #1c74bd);
+    -fx-border-color: #79cfff;
+    -fx-effect: dropshadow(gaussian, rgba(68,184,255,0.55), 22, 0.28, 0, 3);
+}
+.primary-button:armed, .primary-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #124d7a, #0d3a5c);
+    -fx-translate-y: 1;
+    -fx-effect: dropshadow(gaussian, rgba(4,12,22,0.4), 6, 0.1, 0, 2);
+}
+.primary-button:disabled {
+    -fx-opacity: 0.45;
+    -fx-effect: none;
+}
+
+/* PLAY — the one button that should visually win the screen: warm gold
+   accent on the same navy-blue body, slightly taller glow, subtle pulse
+   via the hover/press states below. */
+.featured-button {
+    -fx-background-color: linear-gradient(to bottom, #3aa3ff, #1567a8);
+    -fx-border-width: 2;
+    -fx-border-color: #ffd166;
+    -fx-text-fill: #fffaf0;
+    -fx-font-size: 17px;
+    -fx-background-radius: 30;
+    -fx-border-radius: 30;
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.45), 20, 0.35, 0, 0);
+}
+.featured-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #4bb0ff, #1a76c0);
+    -fx-border-color: #ffdd8a;
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.65), 28, 0.4, 0, 0);
+}
+.featured-button:armed, .featured-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #1567a8, #0d3a5c);
+}
+
+.ghost-button {
+    -fx-letter-spacing: 0.8px;
+    -fx-background-color: rgba(10, 25, 42, 0.35);
+    -fx-text-fill: #dce8f2;
+    -fx-border-color: rgba(46, 93, 135, 0.7);
+    -fx-border-radius: 24;
+    -fx-background-radius: 24;
+    -fx-border-width: 1.3;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 8, 0.1, 0, 3);
+}
+.ghost-button:hover {
+    -fx-background-color: rgba(68,184,255,0.12);
+    -fx-border-color: #44b8ff;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(68,184,255,0.35), 14, 0.2, 0, 0);
+}
+.ghost-button:armed, .ghost-button:pressed {
+    -fx-background-color: rgba(68,184,255,0.20);
+    -fx-translate-y: 1;
+}
+
+.danger-button {
+    -fx-letter-spacing: 1px;
+    -fx-background-color: linear-gradient(to bottom, #7a2323, #4a1414);
+    -fx-text-fill: #ffece7;
+    -fx-font-weight: bold;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: #a83c3c;
+    -fx-border-width: 1.5;
+    -fx-cursor: hand;
+}
+.danger-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #9c3333, #6e2020);
+    -fx-effect: dropshadow(gaussian, rgba(255,92,92,0.3), 14, 0.2, 0, 0);
+}
+
+/* ---------- Panels / cards ---------- */
+
+.card-panel {
+    -fx-background-color: linear-gradient(to bottom, rgba(22,49,74,0.72), rgba(11,27,44,0.85));
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: rgba(46,93,135,0.55);
+    -fx-border-width: 1.5;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 18, 0.15, 0, 6);
+}
+
+.card-panel:hover {    -fx-border-color: #44b8ff;
+}
+
+.status-panel {
+    -fx-background-color: rgba(16,35,55,0.85);
+    -fx-background-radius: 10;
+    -fx-border-color: #2e5d87;
+    -fx-border-radius: 10;
+    -fx-border-width: 1.2;
+}
+
+.qr-frame {
+    -fx-background-color: #f5f7fa;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-color: #ffd166;
+    -fx-border-width: 3;
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.4), 22, 0.3, 0, 0);
+}
+
+/* ---------- Form controls ---------- */
+
+.dark-field {
+    -fx-background-color: rgba(10,25,40,0.7);
+    -fx-text-fill: #f5f7fa;
+    -fx-prompt-text-fill: #5c7c97;
+    -fx-background-radius: 8;
+    -fx-border-color: #2e5d87;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.3;
+}
+.dark-field:focused {
+    -fx-border-color: #44b8ff;
+    -fx-effect: dropshadow(gaussian, rgba(68,184,255,0.3), 10, 0.2, 0, 0);
+}
+
+/* ---------- Weapon / launcher bar ---------- */
+
+.weapon-button {
+    -fx-letter-spacing: 0.5px;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1.5;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+.weapon-button:hover:enabled {
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.35), 10, 0.2, 0, 0);
+}
+
+/* ---------- Misc ---------- */
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+.scroll-bar .thumb {
+    -fx-background-color: #2e5d87;
+    -fx-background-radius: 6;
+}
+.scroll-bar .thumb:hover {
+    -fx-background-color: #44b8ff;
+}
+
+.cell-hit { -fx-fill: #ff5c5c; }
+.cell-miss { -fx-fill: #f5f7fa; }
+.cell-ship { -fx-fill: #2e6690; }
+
+/* ---------- Modal overlays (How To Play / Options) ---------- */
+
+.overlay-backdrop {
+    -fx-background-color: rgba(3,10,18,0.72);
+}
+
+.overlay-card {
+    -fx-background-color: linear-gradient(to bottom, rgba(24,52,80,0.96), rgba(8,20,33,0.98));
+    -fx-background-radius: 18;
+    -fx-border-radius: 18;
+    -fx-border-color: #ffd166;
+    -fx-border-width: 1.5;
+    -fx-padding: 30 36;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.6), 30, 0.2, 0, 10);
+}
+
+.overlay-title {
+    -fx-letter-spacing: 1px;
+    -fx-font-family: "Arial Black", Arial, sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 24px;
+    -fx-text-fill: #f5f7fa;
+}
+
+.overlay-block-title {
+    -fx-letter-spacing: 0.8px;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-text-fill: #ffd166;
+}
+
+.overlay-divider {
+    -fx-background-color: rgba(46,93,135,0.55);
+    -fx-pref-height: 1;
+    -fx-max-height: 1;
+}
+
+/* Segmented toggle group (Resolution / UI Scale / Animations rows) */
+.segmented-toggle {
+    -fx-background-color: rgba(10,25,40,0.7);
+    -fx-text-fill: #c7d9e8;
+    -fx-border-color: #2e5d87;
+    -fx-border-width: 1.2;
+    -fx-background-radius: 7;
+    -fx-border-radius: 7;
+    -fx-font-size: 11.5px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-padding: 6 14;
+}
+.segmented-toggle:hover {
+    -fx-border-color: #44b8ff;
+}
+.segmented-toggle:selected {
+    -fx-background-color: linear-gradient(to bottom, #2c8fe0, #1665a8);
+    -fx-text-fill: #f5f7fa;
+    -fx-border-color: #63c4ff;
+}
+
+/* Sliders (Master Volume / SFX Volume) */
+.themed-slider .track {
+    -fx-background-color: rgba(255,255,255,0.08);
+    -fx-background-radius: 4;
+    -fx-pref-height: 6;
+}
+.themed-slider .thumb {
+    -fx-background-color: #44b8ff;
+    -fx-background-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(68,184,255,0.5), 8, 0.3, 0, 0);
+}
+.themed-slider:hover .thumb {
+    -fx-background-color: #63c4ff;
+}
+
+/* Mute-all switch (rendered as a small toggle button pill) */
+.switch-toggle {
+    -fx-background-color: rgba(10,25,40,0.7);
+    -fx-border-color: #2e5d87;
+    -fx-border-width: 1.2;
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-cursor: hand;
+    -fx-text-fill: #5c7c97;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 5 12;
+}
+.switch-toggle:selected {
+    -fx-background-color: linear-gradient(to bottom, #2c8fe0, #1665a8);
+    -fx-border-color: #63c4ff;
+    -fx-text-fill: #f5f7fa;
+}
+
+.keybind-box {
+    -fx-background-color: rgba(10,25,40,0.7);
+    -fx-border-color: #2e5d87;
+    -fx-border-width: 1.2;
+    -fx-background-radius: 7;
+    -fx-border-radius: 7;
+    -fx-padding: 6 16;
+    -fx-text-fill: #f5f7fa;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+/* ---------- Mode-select cards ---------- */
+
+.mode-card-title {
+    -fx-letter-spacing: 1px;
+    -fx-font-family: "Arial Black", Arial, sans-serif;
+    -fx-font-weight: bold;
+    -fx-font-size: 22px;
+    -fx-text-fill: #f5f7fa;
+}
+.mode-card-sub {
+    -fx-letter-spacing: 1px;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #8fafc7;
+}
+.mode-card-icon-ring {
+    -fx-background-color: rgba(68,184,255,0.08);
+    -fx-background-radius: 50%;
+    -fx-border-color: rgba(68,184,255,0.35);
+    -fx-border-width: 1.2;
+    -fx-border-radius: 50%;
+}
+.mode-card-locked {
+    -fx-opacity: 0.55;
+}
+
+/* Bigger, punchier variant used on the Select Game Mode screen. Each mode
+   gets its own accent color so the three cards read as distinct choices
+   rather than three identical boxes. */
+.mode-card {
+    -fx-background-color: linear-gradient(to bottom, rgba(24,54,82,0.80), rgba(8,19,33,0.94));
+    -fx-background-radius: 22;
+    -fx-border-radius: 22;
+    -fx-border-width: 1.6;
+    -fx-border-color: rgba(46,93,135,0.55);
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 22, 0.18, 0, 10);
+}
+.mode-card-ai:hover {
+    -fx-border-color: #44b8ff;
+    -fx-effect: dropshadow(gaussian, rgba(68,184,255,0.45), 28, 0.28, 0, 8);
+}
+.mode-card-hotseat:hover {
+    -fx-border-color: #6be89b;
+    -fx-effect: dropshadow(gaussian, rgba(107,232,155,0.42), 28, 0.28, 0, 8);
+}
+.mode-card-online:hover {
+    -fx-border-color: #ffd166;
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.5), 30, 0.3, 0, 8);
+}
+
+.mode-card-icon-ring-lg {
+    -fx-background-color: rgba(68,184,255,0.08);
+    -fx-background-radius: 50%;
+    -fx-border-color: rgba(68,184,255,0.4);
+    -fx-border-width: 1.6;
+    -fx-border-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(68,184,255,0.3), 16, 0.22, 0, 0);
+}
+.mode-card-icon-ring-hotseat {
+    -fx-background-color: rgba(107,232,155,0.08);
+    -fx-background-radius: 50%;
+    -fx-border-color: rgba(107,232,155,0.45);
+    -fx-border-width: 1.6;
+    -fx-border-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(107,232,155,0.3), 16, 0.22, 0, 0);
+}
+.mode-card-icon-ring-online {
+    -fx-background-color: rgba(255,209,102,0.10);
+    -fx-background-radius: 50%;
+    -fx-border-color: rgba(255,209,102,0.5);
+    -fx-border-width: 1.6;
+    -fx-border-radius: 50%;
+    -fx-effect: dropshadow(gaussian, rgba(255,209,102,0.32), 16, 0.22, 0, 0);
+}
+
+.mode-card-badge {
+    -fx-letter-spacing: 1.6px;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 3 10;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+.mode-card-badge-ai {
+    -fx-text-fill: #44b8ff;
+    -fx-background-color: rgba(68,184,255,0.12);
+    -fx-border-color: rgba(68,184,255,0.4);
+}
+.mode-card-badge-hotseat {
+    -fx-text-fill: #6be89b;
+    -fx-background-color: rgba(107,232,155,0.12);
+    -fx-border-color: rgba(107,232,155,0.4);
+}
+.mode-card-badge-online {
+    -fx-text-fill: #ffd166;
+    -fx-background-color: rgba(255,209,102,0.12);
+    -fx-border-color: rgba(255,209,102,0.4);
+}
+
+/* ---------- Battlefield-select mini grid previews ---------- */
+
+.board-preview-frame {
+    -fx-background-color: rgba(4,14,26,0.55);
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: rgba(46,93,135,0.6);
+    -fx-border-width: 1.2;
+    -fx-padding: 10;
+}
+.board-preview-frame-ai { -fx-border-color: rgba(68,184,255,0.45); }
+.board-preview-frame-hotseat { -fx-border-color: rgba(107,232,155,0.45); }
+.board-preview-frame-online { -fx-border-color: rgba(255,209,102,0.5); }
+
+.theater-ship-row {
+    -fx-text-fill: #c7d9e8;
+    -fx-font-size: 11.5px;
+}
+
+/* ============================================================
+   BATTLE SCREEN — "Fleet Command" styling
+   Naval command-center look: deep navy panels, cyan accent,
+   gold highlight, red danger, green success.
+   ============================================================ */
+
+.battle-command-bar {
+    -fx-background-color: linear-gradient(to bottom, rgba(24,52,80,0.85), rgba(12,28,46,0.9));
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: rgba(46,93,135,0.55);
+    -fx-border-width: 1;
+    -fx-padding: 12 22;
+}
+
+.turn-badge {
+    -fx-letter-spacing: 1px;
+    -fx-font-family: "Arial Black", Arial, sans-serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 9;
+    -fx-border-radius: 9;
+    -fx-border-width: 1.3;
+    -fx-padding: 8 16;
+}
+.turn-badge-player {
+    -fx-background-color: rgba(68,184,255,0.16);
+    -fx-border-color: #44b8ff;
+    -fx-text-fill: #44b8ff;
+}
+.turn-badge-enemy {
+    -fx-background-color: rgba(255,92,92,0.16);
+    -fx-border-color: #ff5c5c;
+    -fx-text-fill: #ff5c5c;
+}
+.turn-badge-thinking {
+    -fx-background-color: rgba(255,209,102,0.16);
+    -fx-border-color: #ffd166;
+    -fx-text-fill: #ffd166;
+}
+
+.fleet-chip-name {
+    -fx-letter-spacing: 0.5px;
+    -fx-text-fill: #f5f7fa;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+.fleet-chip-role {
+    -fx-letter-spacing: 1.5px;
+    -fx-text-fill: #5c7c97;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+.vs-divider {
+    -fx-letter-spacing: 1.5px;
+    -fx-text-fill: #5c7c97;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.board-card {
+    -fx-background-color: linear-gradient(to bottom, rgba(22,49,74,0.7), rgba(11,27,44,0.82));
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-color: rgba(46,93,135,0.45);
+    -fx-border-width: 1;
+    -fx-padding: 18;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 20, 0.12, 0, 8);
+}
+.board-card-title {
+    -fx-letter-spacing: 1.2px;
+    -fx-text-fill: #8fafc7;
+    -fx-font-family: "Arial Black", Arial, sans-serif;
+    -fx-font-size: 13px;
+}
+.ships-left-badge {
+    -fx-letter-spacing: 0.5px;
+    -fx-text-fill: #44b8ff;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.side-card {
+    -fx-background-color: linear-gradient(to bottom, rgba(22,49,74,0.7), rgba(11,27,44,0.82));
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-color: rgba(46,93,135,0.45);
+    -fx-border-width: 1;
+    -fx-padding: 14;
+}
+.side-card-title {
+    -fx-letter-spacing: 1.8px;
+    -fx-text-fill: #44b8ff;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.fleet-status-row {
+    -fx-padding: 3 2;
+}
+.fleet-status-name {
+    -fx-text-fill: #f5f7fa;
+    -fx-font-size: 12px;
+}
+.fleet-status-name-sunk {
+    -fx-text-fill: #5c7c97;
+    -fx-font-size: 12px;
+    -fx-strikethrough: true;
+}
+.fleet-bar-track {
+    -fx-background-color: rgba(255,255,255,0.07);
+    -fx-background-radius: 3;
+}
+.fleet-bar-fill {
+    -fx-background-color: linear-gradient(to right, #43d17d, #6be89b);
+    -fx-background-radius: 3;
+}
+.fleet-bar-fill-sunk {
+    -fx-background-color: #ff5c5c;
+    -fx-background-radius: 3;
+}
+
+.attack-log-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+}
+.attack-log-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.log-entry {
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 11px;
+    -fx-padding: 6 10;
+    -fx-background-radius: 6;
+    -fx-border-width: 0 0 0 2;
+}
+.log-entry-hit {
+    -fx-border-color: #ff5c5c;
+    -fx-background-color: rgba(255,92,92,0.08);
+    -fx-text-fill: #ffb3b3;
+}
+.log-entry-miss {
+    -fx-border-color: #5c7c97;
+    -fx-background-color: rgba(255,255,255,0.03);
+    -fx-text-fill: #8fafc7;
+}
+.log-entry-sunk {
+    -fx-border-color: #ffd166;
+    -fx-background-color: rgba(255,209,102,0.08);
+    -fx-text-fill: #ffd166;
+}
+.log-entry-info {
+    -fx-border-color: #2e5d87;
+    -fx-background-color: rgba(255,255,255,0.02);
+    -fx-text-fill: #8fafc7;
+}
