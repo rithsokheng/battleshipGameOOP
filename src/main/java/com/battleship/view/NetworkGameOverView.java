@@ -39,7 +39,7 @@ public class NetworkGameOverView {
     }
 
     public StackPane build() {
-        if (netSession.session != null) netSession.session.close();
+        if (netSession.getSession() != null) netSession.getSession().close();
         SoundManager.getInstance().stopBgm();
         SoundManager.getInstance().playGameOver(won);
 
@@ -103,7 +103,7 @@ public class NetworkGameOverView {
         Label title = new Label("YOUR FLEET");
         title.getStyleClass().add("board-card-title");
 
-        Board board = netSession.me.getOwnBoard();
+        Board board = netSession.getMe().getOwnBoard();
         BoardGridPane grid = new BoardGridPane(board.getSize());
         for (Ship s : board.getShips()) {
             if (s.isSunk()) grid.renderSunkShip(s); else grid.renderShip(s);
@@ -126,16 +126,16 @@ public class NetworkGameOverView {
         Label title = new Label("ENEMY WATERS (AS OBSERVED)");
         title.getStyleClass().add("board-card-title");
 
-        int size = netSession.enemyTracker.getSize();
+        int size = netSession.getEnemyTracker().getSize();
         BoardGridPane grid = new BoardGridPane(size);
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 Coordinate coord = new Coordinate(r, c);
-                CellStatus status = netSession.enemyTracker.getStatus(coord);
+                CellStatus status = netSession.getEnemyTracker().getStatus(coord);
                 if (status == CellStatus.HIT || status == CellStatus.MISS) grid.renderShot(coord, status);
             }
         }
-        for (Ship s : netSession.enemyTracker.getKnownSunkShips()) {
+        for (Ship s : netSession.getEnemyTracker().getKnownSunkShips()) {
             grid.renderSunkShip(s);
         }
 

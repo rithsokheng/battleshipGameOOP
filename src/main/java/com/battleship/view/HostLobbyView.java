@@ -129,13 +129,10 @@ public class HostLobbyView {
         session.send(welcome);
 
         int size = theater.getBoardSize();
-        NetworkGameSession netSession = new NetworkGameSession();
-        netSession.session = session;
-        netSession.theater = theater;
-        netSession.isHost = true;
-        netSession.me = new Player("You (Host)", true, new Board(size));
-        netSession.me.initLauncherAmmo(size);
-        netSession.enemyTracker = new EnemyTracker(size);
+        Player me = new Player("You (Host)", true, new Board(size));
+        me.initLauncherAmmo(size);
+        NetworkGameSession netSession = new NetworkGameSession(
+                session, theater, true, me, new EnemyTracker(size));
 
         app.setScreen(new NetworkShipPlaceView(app, controller, netSession).build());
     }

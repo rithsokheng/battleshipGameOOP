@@ -7,6 +7,7 @@ import com.battleship.model.ShipType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -38,6 +39,6 @@ public class EnemyTracker {
     }
 
     public CellStatus getStatus(Coordinate c) { return grid[c.getRow()][c.getCol()]; }
-    public List<Ship> getKnownSunkShips() { return knownSunkShips; }
+    public List<Ship> getKnownSunkShips() { return Collections.unmodifiableList(knownSunkShips); }
     public int getSize() { return size; }
 }

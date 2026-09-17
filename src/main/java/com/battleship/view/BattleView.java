@@ -2,7 +2,6 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.controller.LauncherFireResult;
-import com.battleship.controller.LauncherLogic;
 import com.battleship.model.*;
 import com.battleship.view.quiz.NuclearLaunchDialog;
 import com.battleship.view.quiz.NuclearResupplyDialog;
@@ -386,7 +385,7 @@ public class BattleView {
         clearGhost();
         Player player = controller.getCurrentPlayer();
         LauncherType type = player.getSelectedLauncher();
-        List<Coordinate> cells = LauncherLogic.getTargetCells(type, new Coordinate(row, col), player.isLauncherHorizontal());
+        List<Coordinate> cells = type.getTargetCells(new Coordinate(row, col), player.isLauncherHorizontal());
         int size = enemyGrid.getSize();
         for (Coordinate c : cells) {
             if (!c.isWithinBounds(size)) continue;
@@ -419,8 +418,8 @@ public class BattleView {
 
         Player attacker = controller.getCurrentPlayer();
         Board opponentBoard = controller.getOpponent().getOwnBoard();
-        List<Coordinate> pattern = LauncherLogic.getTargetCells(
-                attacker.getSelectedLauncher(), anchor, attacker.isLauncherHorizontal());
+        List<Coordinate> pattern = attacker.getSelectedLauncher().getTargetCells(
+                anchor, attacker.isLauncherHorizontal());
 
         boolean anyLiveCell = pattern.stream().anyMatch(c ->
                 c.isWithinBounds(opponentBoard.getSize()) &&
@@ -450,7 +449,7 @@ public class BattleView {
         }
 
         clearGhost();
-        int nuclearBefore = attacker.getNuclearAmmo();
+        boolean hadNuclearAmmo = attacker.getAmmo().hasAmmo(LauncherType.NUCLEAR);
         LauncherFireResult result = controller.fireLauncher(anchor);
         applyResult(enemyGrid, result);
         refreshLauncherBar();
@@ -462,7 +461,7 @@ public class BattleView {
         }
 
         // Only start the resupply countdown if the battle is still running.
-        maybeTriggerNuclearResupply(attacker, nuclearBefore);
+        maybeTriggerNuclearResupply(attacker, hadNuclearAmmo);
 
         if (controller.getSelectedMode() == GameMode.HOTSEAT) {
             SoundManager.getInstance().stopBgm();
@@ -480,7 +479,7 @@ public class BattleView {
         pause.setOnFinished(e -> {
             SoundManager.getInstance().playFire();
             Player attacker = controller.getCurrentPlayer();
-            int nuclearBefore = attacker.getNuclearAmmo();
+            boolean hadNuclearAmmo = attacker.getAmmo().hasAmmo(LauncherType.NUCLEAR);
             LauncherFireResult result = controller.fireAiLauncher();
             applyResult(ownGrid, result);
 
@@ -490,7 +489,7 @@ public class BattleView {
                 return;
             }
 
-            maybeTriggerNuclearResupply(attacker, nuclearBefore);
+            maybeTriggerNuclearResupply(attacker, hadNuclearAmmo);
 
             SoundManager.getInstance().playTurnStart();
             updateTurnBadge(controller.getCurrentPlayer().getName() + "'S TURN", "turn-badge-player");
@@ -528,10 +527,10 @@ public class BattleView {
     }
 
     /** If this fire just used the player's last Nuclear shot, start the 30s auto-resupply countdown. */
-    private void maybeTriggerNuclearResupply(Player player, int nuclearAmmoBefore) {
-        if (nuclearAmmoBefore > 0 && player.getNuclearAmmo() == 0) {
+    private void maybeTriggerNuclearResupply(Player player, boolean hadNuclearAmmoBefore) {
+        if (hadNuclearAmmoBefore && !player.getAmmo().hasAmmo(LauncherType.NUCLEAR)) {
             NuclearResupplyDialog.show(app.getStage(), () -> {
-                player.setNuclearAmmo(player.getNuclearAmmo() + 1);
+                player.getAmmo().resupply(LauncherType.NUCLEAR, 1);
                 refreshLauncherBar();
             });
         }

@@ -11,8 +11,7 @@ public class Player {
     private final Board ownBoard;
 
     // --- Launcher system ---
-    private int level2Ammo;
-    private int nuclearAmmo;
+    private AmmoInventory ammo;
     private LauncherType selectedLauncher = LauncherType.DEFAULT;
     private boolean launcherHorizontal = true;
 
@@ -28,8 +27,7 @@ public class Player {
 
     /** Sets starting ammo for the launcher system based on the battle's board size. */
     public void initLauncherAmmo(int boardSize) {
-        this.level2Ammo = LauncherType.LEVEL_2.getStartingAmmo(boardSize);
-        this.nuclearAmmo = LauncherType.NUCLEAR.getStartingAmmo(boardSize);
+        this.ammo = new AmmoInventory(boardSize);
         this.selectedLauncher = LauncherType.DEFAULT;
         this.launcherHorizontal = true;
     }
@@ -38,11 +36,7 @@ public class Player {
     public boolean isHuman() { return isHuman; }
     public Board getOwnBoard() { return ownBoard; }
 
-    public int getLevel2Ammo() { return level2Ammo; }
-    public void setLevel2Ammo(int level2Ammo) { this.level2Ammo = level2Ammo; }
-
-    public int getNuclearAmmo() { return nuclearAmmo; }
-    public void setNuclearAmmo(int nuclearAmmo) { this.nuclearAmmo = nuclearAmmo; }
+    public AmmoInventory getAmmo() { return ammo; }
 
     public LauncherType getSelectedLauncher() { return selectedLauncher; }
     public void setSelectedLauncher(LauncherType selectedLauncher) { this.selectedLauncher = selectedLauncher; }

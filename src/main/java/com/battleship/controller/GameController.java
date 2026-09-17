@@ -162,8 +162,7 @@ public class GameController {
     public boolean setSelectedLauncher(Player player, LauncherType type) {
         int size = selectedTheater.getBoardSize();
         if (!type.isAvailableFor(size)) return false;
-        if (type == LauncherType.LEVEL_2 && player.getLevel2Ammo() <= 0) return false;
-        if (type == LauncherType.NUCLEAR && player.getNuclearAmmo() <= 0) return false;
+        if (!player.getAmmo().hasAmmo(type)) return false;
         player.setSelectedLauncher(type);
         return true;
     }
@@ -173,11 +172,7 @@ public class GameController {
     }
 
     public int getAmmoRemaining(Player player, LauncherType type) {
-        return switch (type) {
-            case DEFAULT -> Integer.MAX_VALUE;
-            case LEVEL_2 -> player.getLevel2Ammo();
-            case NUCLEAR -> player.getNuclearAmmo();
-        };
+        return player.getAmmo().getAmmo(type);
     }
 
     /**
@@ -191,7 +186,7 @@ public class GameController {
         LauncherType type = attacker.getSelectedLauncher();
         int size = defender.getOwnBoard().getSize();
 
-        List<Coordinate> cells = LauncherLogic.getTargetCells(type, anchor, attacker.isLauncherHorizontal());
+        List<Coordinate> cells = type.getTargetCells(anchor, attacker.isLauncherHorizontal());
         List<ShotResult> results = new ArrayList<>();
         LinkedHashSet<Ship> sunk = new LinkedHashSet<>();
 
@@ -204,8 +199,7 @@ public class GameController {
             if (r.outcome() == CellStatus.SUNK) sunk.add(r.shipSunk());
         }
 
-        if (type == LauncherType.LEVEL_2) attacker.setLevel2Ammo(attacker.getLevel2Ammo() - 1);
-        if (type == LauncherType.NUCLEAR) attacker.setNuclearAmmo(attacker.getNuclearAmmo() - 1);
+        attacker.getAmmo().consume(type);
         attacker.setSelectedLauncher(LauncherType.DEFAULT); // must actively re-select each turn (rule 1)
 
         if (aiStrategy != null && attacker == player2) {
@@ -225,7 +219,8 @@ public class GameController {
 
     /** Has the AI choose a weapon + target, applies the selection, and fires it. */
     public LauncherFireResult fireAiLauncher() {
-        AiShotPlan plan = aiStrategy.chooseShotPlan(player1.getOwnBoard(), player2.getLevel2Ammo(), player2.getNuclearAmmo());
+        AiShotPlan plan = aiStrategy.chooseShotPlan(
+                player1.getOwnBoard(), player2.getAmmo());
         player2.setSelectedLauncher(plan.type());
         player2.setLauncherHorizontal(plan.horizontal());
         return fireLauncher(plan.anchor());

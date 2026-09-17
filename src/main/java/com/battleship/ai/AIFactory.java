@@ -5,6 +5,8 @@ import com.battleship.model.GameMode;
 /** Factory that instantiates the correct AIStrategy for a given Difficulty or GameMode. */
 public class AIFactory {
 
+    private AIFactory() { } // prevent instantiation
+
     public static AIStrategy create(Difficulty difficulty) {
         return switch (difficulty) {
             case ENSIGN -> new RandomAI();

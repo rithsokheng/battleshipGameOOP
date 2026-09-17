@@ -9,20 +9,25 @@ import java.util.List;
 /**
  * Admiral (Hard) difficulty: builds a probability density map over unshot
  * cells (how many valid remaining-ship placements would cover each cell)
- * and fires at the highest-probability cell. Falls back to HuntTargetAI's
- * queue-following behavior right after a hit, since that's more precise
- * than pure probability once a ship has been found.
+ * and fires at the highest-probability cell. Falls back to target-following
+ * behavior right after a hit, since that's more precise than pure probability
+ * once a ship has been found.
+ *
+ * Uses composition (TargetingQueue) instead of inheriting from HuntTargetAI.
  */
-public class SmartAI extends HuntTargetAI {
+public class SmartAI implements AIStrategy {
 
+    private final TargetingQueue targetQueue = new TargetingQueue();
     private final SecureRandom random = new SecureRandom();
+    private int lastBoardSize = -1;
 
     @Override
     public Coordinate chooseTarget(Board enemyBoard) {
+        lastBoardSize = enemyBoard.getSize();
+
         // If we're actively finishing off a located ship, defer to the queue.
-        if (!queue.isEmpty()) {
-            return super.chooseTarget(enemyBoard);
-        }
+        Coordinate queued = targetQueue.nextTarget(enemyBoard);
+        if (queued != null) return queued;
 
         int size = enemyBoard.getSize();
         int[][] density = new int[size][size];
@@ -31,7 +36,7 @@ public class SmartAI extends HuntTargetAI {
             if (!s.isSunk()) remaining.add(s.getType());
         }
         if (remaining.isEmpty()) {
-            return super.chooseTarget(enemyBoard);
+            return fallbackHunt(enemyBoard);
         }
 
         for (ShipType type : remaining) {
@@ -69,8 +74,30 @@ public class SmartAI extends HuntTargetAI {
             }
         }
 
-        if (bestCells.isEmpty()) return super.chooseTarget(enemyBoard);
+        if (bestCells.isEmpty()) return fallbackHunt(enemyBoard);
         return bestCells.get(random.nextInt(bestCells.size()));
+    }
+
+    @Override
+    public void notifyResult(ShotResult result) {
+        if (!result.isHit()) return;
+        if (result.outcome() == CellStatus.SUNK) {
+            targetQueue.clear();
+            return;
+        }
+        if (lastBoardSize > 0) {
+            targetQueue.enqueueNeighbors(result.coordinate(), lastBoardSize);
+        }
+    }
+
+    private Coordinate fallbackHunt(Board enemyBoard) {
+        List<Coordinate> unshot = enemyBoard.getUnshotCells();
+        List<Coordinate> parity = new ArrayList<>();
+        for (Coordinate c : unshot) {
+            if ((c.getRow() + c.getCol()) % 2 == 0) parity.add(c);
+        }
+        List<Coordinate> pool = parity.isEmpty() ? unshot : parity;
+        return pool.get(random.nextInt(pool.size()));
     }
 
     private boolean fits(Board board, int row, int col, int len, boolean horizontal) {
@@ -91,17 +118,17 @@ public class SmartAI extends HuntTargetAI {
      * the ammo and falls back to a precise single Default shot.
      */
     @Override
-    public AiShotPlan chooseShotPlan(Board enemyBoard, int level2Ammo, int nuclearAmmo) {
-        if (!queue.isEmpty()) {
+    public AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
+        if (targetQueue.hasTargets()) {
             return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), true);
         }
 
         int size = enemyBoard.getSize();
-        if (nuclearAmmo > 0 && size >= 10) {
+        if (ammo.hasAmmo(LauncherType.NUCLEAR) && !ammo.isInfinite(LauncherType.NUCLEAR) && size >= 10) {
             AiShotPlan plan = bestBlock(enemyBoard, LauncherType.NUCLEAR);
             if (plan != null) return plan;
         }
-        if (level2Ammo > 0 && size >= 8) {
+        if (ammo.hasAmmo(LauncherType.LEVEL_2) && !ammo.isInfinite(LauncherType.LEVEL_2) && size >= 8) {
             AiShotPlan plan = bestBlock(enemyBoard, LauncherType.LEVEL_2);
             if (plan != null) return plan;
         }
@@ -111,7 +138,10 @@ public class SmartAI extends HuntTargetAI {
     /** Finds the best-scoring placement for an area weapon; null if not worth the ammo. */
     private AiShotPlan bestBlock(Board board, LauncherType type) {
         int size = board.getSize();
-        int[][] dims = type == LauncherType.NUCLEAR ? new int[][]{{2, 3}, {3, 2}} : new int[][]{{1, 3}, {3, 1}};
+        // Use the type's own cell count to derive dimensions
+        int[][] dims = type == LauncherType.NUCLEAR
+                ? new int[][]{{2, 3}, {3, 2}}
+                : new int[][]{{1, 3}, {3, 1}};
 
         int bestScore = -1;
         Coordinate bestAnchor = null;
@@ -119,7 +149,7 @@ public class SmartAI extends HuntTargetAI {
 
         for (int[] dim : dims) {
             int rows = dim[0], cols = dim[1];
-            boolean horizontal = rows <= cols; // matches LauncherLogic's horizontal convention
+            boolean horizontal = rows <= cols; // matches LauncherType's horizontal convention
             for (int r = 0; r <= size - rows; r++) {
                 for (int c = 0; c <= size - cols; c++) {
                     int score = 0;

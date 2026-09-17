@@ -1,5 +1,6 @@
 package com.battleship.ai;
 
+import com.battleship.model.AmmoInventory;
 import com.battleship.model.Board;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
@@ -22,7 +23,7 @@ public interface AIStrategy {
      * chooseTarget(), so Easy AI (and any strategy that doesn't override this)
      * never touches the special launchers.
      */
-    default AiShotPlan chooseShotPlan(Board enemyBoard, int level2Ammo, int nuclearAmmo) {
+    default AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
         return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), true);
     }
 }

@@ -116,13 +116,10 @@ public class JoinLobbyView {
         int size = theater.getBoardSize();
         controller.setTheater(theater); // sets up selectedTheater so placement helpers work below
 
-        NetworkGameSession netSession = new NetworkGameSession();
-        netSession.session = session;
-        netSession.theater = theater;
-        netSession.isHost = false;
-        netSession.me = new Player("You", true, new Board(size));
-        netSession.me.initLauncherAmmo(size);
-        netSession.enemyTracker = new EnemyTracker(size);
+        Player me = new Player("You", true, new Board(size));
+        me.initLauncherAmmo(size);
+        NetworkGameSession netSession = new NetworkGameSession(
+                session, theater, false, me, new EnemyTracker(size));
 
         app.setScreen(new NetworkShipPlaceView(app, controller, netSession).build());
     }

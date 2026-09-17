@@ -1,5 +1,6 @@
 package com.battleship.ai;
 
+import com.battleship.model.AmmoInventory;
 import com.battleship.model.Board;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
@@ -7,9 +8,7 @@ import com.battleship.model.LauncherType;
 import com.battleship.model.ShotResult;
 
 import java.security.SecureRandom;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
 
 /**
@@ -19,8 +18,8 @@ import java.util.List;
  */
 public class HuntTargetAI implements AIStrategy {
 
-    protected final Deque<Coordinate> queue = new ArrayDeque<>();
-    protected final SecureRandom random = new SecureRandom();
+    private final TargetingQueue targetQueue = new TargetingQueue();
+    private final SecureRandom random = new SecureRandom();
     private int lastBoardSize = -1;
 
     @Override
@@ -28,13 +27,8 @@ public class HuntTargetAI implements AIStrategy {
         lastBoardSize = enemyBoard.getSize();
 
         // TARGET mode: drain queue, skip any coordinate already shot at.
-        while (!queue.isEmpty()) {
-            Coordinate c = queue.poll();
-            CellStatus status = enemyBoard.getCellStatus(c);
-            if (status == CellStatus.EMPTY || status == CellStatus.SHIP) {
-                return c;
-            }
-        }
+        Coordinate queued = targetQueue.nextTarget(enemyBoard);
+        if (queued != null) return queued;
 
         // HUNT mode: checkerboard parity over unshot cells.
         List<Coordinate> unshot = enemyBoard.getUnshotCells();
@@ -50,17 +44,10 @@ public class HuntTargetAI implements AIStrategy {
     public void notifyResult(ShotResult result) {
         if (!result.isHit()) return;
         if (result.outcome() == CellStatus.SUNK) {
-            queue.clear();
+            targetQueue.clear();
             return;
         }
-        Coordinate c = result.coordinate();
-        int[][] deltas = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
-        for (int[] d : deltas) {
-            Coordinate n = new Coordinate(c.getRow() + d[0], c.getCol() + d[1]);
-            if (lastBoardSize < 0 || n.isWithinBounds(lastBoardSize)) {
-                queue.add(n);
-            }
-        }
+        targetQueue.enqueueNeighbors(result.coordinate(), lastBoardSize);
     }
 
     /**
@@ -69,9 +56,10 @@ public class HuntTargetAI implements AIStrategy {
      * to cover 3 cells at once instead of 1.
      */
     @Override
-    public AiShotPlan chooseShotPlan(Board enemyBoard, int level2Ammo, int nuclearAmmo) {
-        boolean hunting = queue.isEmpty();
-        if (hunting && level2Ammo > 0 && random.nextInt(4) == 0) {
+    public AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
+        boolean hunting = !targetQueue.hasTargets();
+        if (hunting && ammo.hasAmmo(LauncherType.LEVEL_2) && !ammo.isInfinite(LauncherType.LEVEL_2)
+                && random.nextInt(4) == 0) {
             List<Coordinate> unshot = enemyBoard.getUnshotCells();
             List<Coordinate> parity = new ArrayList<>();
             for (Coordinate c : unshot) {
@@ -81,6 +69,11 @@ public class HuntTargetAI implements AIStrategy {
             Coordinate anchor = pool.get(random.nextInt(pool.size()));
             return new AiShotPlan(LauncherType.LEVEL_2, anchor, random.nextBoolean());
         }
-        return AIStrategy.super.chooseShotPlan(enemyBoard, level2Ammo, nuclearAmmo);
+        return AIStrategy.super.chooseShotPlan(enemyBoard, ammo);
+    }
+
+    /** Expose targeting queue state for SmartAI composition. */
+    protected boolean isTargeting() {
+        return targetQueue.hasTargets();
     }
 }

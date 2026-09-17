@@ -1,7 +1,6 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
-import com.battleship.controller.LauncherLogic;
 import com.battleship.model.*;
 import com.battleship.net.NetMessage;
 import com.battleship.net.NetworkGameSession;
@@ -52,11 +51,11 @@ public class NetworkBattleView {
         this.app = app;
         this.controller = controller;
         this.netSession = netSession;
-        this.me = netSession.me;
+        this.me = netSession.getMe();
     }
 
     public StackPane build() {
-        turnLabel = new Label(netSession.myTurn ? "YOUR TURN" : "OPPONENT'S TURN");
+        turnLabel = new Label(netSession.isMyTurn() ? "YOUR TURN" : "OPPONENT'S TURN");
         turnLabel.getStyleClass().add("app-title");
         turnLabel.setStyle("-fx-font-size:24px;");
 
@@ -77,9 +76,9 @@ public class NetworkBattleView {
             if (!s.isSunk()) ownGrid.renderShip(s);
         }
 
-        enemyGrid = new BoardGridPane(netSession.enemyTracker.getSize());
+        enemyGrid = new BoardGridPane(netSession.getEnemyTracker().getSize());
         attachFireHandlers();
-        enemyGrid.setDisable(!netSession.myTurn);
+        enemyGrid.setDisable(!netSession.isMyTurn());
 
         Label ownLabel = new Label("YOUR FLEET");
         ownLabel.getStyleClass().add("accent-text");
@@ -120,8 +119,8 @@ public class NetworkBattleView {
         });
         root.requestFocus();
 
-        netSession.session.setOnMessage(this::handleMessage);
-        netSession.session.setOnDisconnected(this::handleDisconnect);
+        netSession.getSession().setOnMessage(this::handleMessage);
+        netSession.getSession().setOnDisconnected(this::handleDisconnect);
 
         SoundManager.getInstance().playBattleMusic();
 
@@ -152,7 +151,7 @@ public class NetworkBattleView {
     private void handleIncomingFire(NetMessage msg) {
         LauncherType type = LauncherType.valueOf(msg.launcherType);
         Coordinate anchor = new Coordinate(msg.anchorRow, msg.anchorCol);
-        List<Coordinate> cells = LauncherLogic.getTargetCells(type, anchor, msg.horizontal);
+        List<Coordinate> cells = type.getTargetCells(anchor, msg.horizontal);
         Board myBoard = me.getOwnBoard();
 
         List<ShotResult> results = new ArrayList<>();
@@ -191,7 +190,7 @@ public class NetworkBattleView {
             result.sunkShips.add(si);
         }
         result.defenderLost = lost;
-        netSession.session.send(result);
+        netSession.getSession().send(result);
 
         refreshFleetStatus();
 
@@ -210,7 +209,7 @@ public class NetworkBattleView {
             SoundManager.getInstance().playMiss();
         }
         logLabel.setText(anyHit ? "Incoming fire — you took damage!" : "Incoming fire — they missed.");
-        netSession.myTurn = true;
+        netSession.setMyTurn(true);
         SoundManager.getInstance().playTurnStart();
         turnLabel.setText("YOUR TURN");
         enemyGrid.setDisable(false);
@@ -224,11 +223,11 @@ public class NetworkBattleView {
             Coordinate c = new Coordinate(cr.row, cr.col);
             CellStatus status = CellStatus.valueOf(cr.outcome);
             if (status == CellStatus.HIT) {
-                netSession.enemyTracker.recordHit(c);
+                netSession.getEnemyTracker().recordHit(c);
                 enemyGrid.renderShot(c, CellStatus.HIT);
                 anyHit = true;
             } else if (status == CellStatus.MISS) {
-                netSession.enemyTracker.recordMiss(c);
+                netSession.getEnemyTracker().recordMiss(c);
                 enemyGrid.renderShot(c, CellStatus.MISS);
             } else if (status == CellStatus.SUNK) {
                 anyHit = true; // cell rendering handled via sunkShips below
@@ -239,7 +238,7 @@ public class NetworkBattleView {
                 ShipType type = ShipType.valueOf(si.shipType);
                 List<Coordinate> cells = new ArrayList<>();
                 for (int[] rc : si.cells) cells.add(new Coordinate(rc[0], rc[1]));
-                Ship ship = netSession.enemyTracker.recordSunk(type, cells);
+                Ship ship = netSession.getEnemyTracker().recordSunk(type, cells);
                 enemyGrid.renderSunkShip(ship);
                 log.append(type.name().replace('_', ' ')).append(" has been sent to the bottom! ");
             }
@@ -261,7 +260,7 @@ public class NetworkBattleView {
             goToGameOver(true);
             return;
         }
-        netSession.myTurn = false;
+        netSession.setMyTurn(false);
         turnLabel.setText("OPPONENT'S TURN");
         enemyGrid.setDisable(true);
     }
@@ -277,7 +276,7 @@ public class NetworkBattleView {
         alert.setContentText("Leave this match and return to the main menu? This will disconnect your opponent.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            netSession.session.close();
+            netSession.getSession().close();
             SoundManager.getInstance().stopBgm();
             SoundManager.getInstance().playMenuMusic();
             app.showMainMenu();
@@ -298,7 +297,7 @@ public class NetworkBattleView {
         boolean available = type.isAvailableFor(size);
         int ammo = controller.getAmmoRemaining(me, type);
         boolean hasAmmo = type == LauncherType.DEFAULT || ammo > 0;
-        boolean enabled = available && hasAmmo && netSession.myTurn;
+        boolean enabled = available && hasAmmo && netSession.isMyTurn();
 
         String ammoText = type == LauncherType.DEFAULT ? "\u221E" : String.valueOf(ammo);
         Button b = new Button(type.getLabel() + "  (" + ammoText + ")");
@@ -357,10 +356,10 @@ public class NetworkBattleView {
     }
 
     private void showGhost(int row, int col) {
-        if (!netSession.myTurn) return;
+        if (!netSession.isMyTurn()) return;
         clearGhost();
         LauncherType type = me.getSelectedLauncher();
-        List<Coordinate> cells = LauncherLogic.getTargetCells(type, new Coordinate(row, col), me.isLauncherHorizontal());
+        List<Coordinate> cells = type.getTargetCells(new Coordinate(row, col), me.isLauncherHorizontal());
         int size = enemyGrid.getSize();
         for (Coordinate c : cells) {
             if (!c.isWithinBounds(size)) continue;
@@ -372,7 +371,7 @@ public class NetworkBattleView {
     private void clearGhost() {
         for (int[] rc : ghostCells) {
             Coordinate c = new Coordinate(rc[0], rc[1]);
-            CellStatus status = netSession.enemyTracker.getStatus(c);
+            CellStatus status = netSession.getEnemyTracker().getStatus(c);
             if (status == CellStatus.HIT || status == CellStatus.MISS) {
                 enemyGrid.renderShot(c, status);
             } else {
@@ -380,7 +379,7 @@ public class NetworkBattleView {
             }
         }
         ghostCells.clear();
-        for (Ship s : netSession.enemyTracker.getKnownSunkShips()) {
+        for (Ship s : netSession.getEnemyTracker().getKnownSunkShips()) {
             enemyGrid.renderSunkShip(s);
         }
     }
@@ -388,18 +387,18 @@ public class NetworkBattleView {
     // ---------- Firing ----------
 
     private void handleFireClick(Coordinate anchor) {
-        if (!netSession.myTurn) return;
+        if (!netSession.isMyTurn()) return;
 
         LauncherType type = me.getSelectedLauncher();
         boolean horizontal = me.isLauncherHorizontal();
-        List<Coordinate> pattern = LauncherLogic.getTargetCells(type, anchor, horizontal);
-        int size = netSession.enemyTracker.getSize();
+        List<Coordinate> pattern = type.getTargetCells(anchor, horizontal);
+        int size = netSession.getEnemyTracker().getSize();
 
         boolean anyLiveCell = pattern.stream().anyMatch(c ->
                 c.isWithinBounds(size) &&
-                netSession.enemyTracker.getStatus(c) != CellStatus.HIT &&
-                netSession.enemyTracker.getStatus(c) != CellStatus.MISS &&
-                netSession.enemyTracker.getStatus(c) != CellStatus.SUNK);
+                netSession.getEnemyTracker().getStatus(c) != CellStatus.HIT &&
+                netSession.getEnemyTracker().getStatus(c) != CellStatus.MISS &&
+                netSession.getEnemyTracker().getStatus(c) != CellStatus.SUNK);
 
         if (!anyLiveCell) {
             logLabel.setText("That area is already fully shelled, Admiral.");
@@ -422,12 +421,12 @@ public class NetworkBattleView {
         } else {
             SoundManager.getInstance().playFire();
         }
-        if (type == LauncherType.LEVEL_2) me.setLevel2Ammo(me.getLevel2Ammo() - 1);
+        if (type == LauncherType.LEVEL_2) me.getAmmo().consume(LauncherType.LEVEL_2);
         if (type == LauncherType.NUCLEAR) {
-            me.setNuclearAmmo(me.getNuclearAmmo() - 1);
-            if (me.getNuclearAmmo() == 0) {
+            me.getAmmo().consume(LauncherType.NUCLEAR);
+            if (!me.getAmmo().hasAmmo(LauncherType.NUCLEAR)) {
                 NuclearResupplyDialog.show(app.getStage(), () -> {
-                    me.setNuclearAmmo(me.getNuclearAmmo() + 1);
+                    me.getAmmo().resupply(LauncherType.NUCLEAR, 1);
                     refreshLauncherBar();
                 });
             }
@@ -439,9 +438,9 @@ public class NetworkBattleView {
         fire.anchorRow = anchor.getRow();
         fire.anchorCol = anchor.getCol();
         fire.horizontal = horizontal;
-        netSession.session.send(fire);
+        netSession.getSession().send(fire);
 
-        netSession.myTurn = false;
+        netSession.setMyTurn(false);
         turnLabel.setText("AWAITING RESPONSE\u2026");
         enemyGrid.setDisable(true);
         refreshLauncherBar();
@@ -450,7 +449,7 @@ public class NetworkBattleView {
     private void refreshFleetStatus() {
         int myTotal = me.getOwnBoard().getShips().size();
         long myLost = me.getOwnBoard().getShips().stream().filter(Ship::isSunk).count();
-        int enemySunkKnown = netSession.enemyTracker.getKnownSunkShips().size();
+        int enemySunkKnown = netSession.getEnemyTracker().getKnownSunkShips().size();
         int enemyTotal = controller.getSelectedTheater().getTotalShipCount();
         fleetStatusLabel.setText("Your ships lost: " + myLost + " / " + myTotal +
                 "     Enemy ships confirmed sunk: " + enemySunkKnown + " / " + enemyTotal);

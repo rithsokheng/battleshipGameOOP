@@ -1,6 +1,7 @@
 package com.battleship.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,6 +84,15 @@ public class Board {
 
     /** Resolves a shot at the given coordinate and updates grid state. */
     public ShotResult receiveShot(Coordinate c) {
+        if (!c.isWithinBounds(size)) {
+            throw new IllegalArgumentException("Coordinate " + c + " is out of bounds for board of size " + size);
+        }
+        // Guard: if cell already resolved, return current status as no-op.
+        CellStatus existing = grid[c.getRow()][c.getCol()];
+        if (existing == CellStatus.HIT || existing == CellStatus.MISS || existing == CellStatus.SUNK) {
+            return new ShotResult(c, existing, null);
+        }
+
         Ship ship = shipGrid[c.getRow()][c.getCol()];
         if (ship == null) {
             grid[c.getRow()][c.getCol()] = CellStatus.MISS;
@@ -119,7 +129,20 @@ public class Board {
     }
 
     public int getSize() { return size; }
-    public CellStatus getCellStatus(Coordinate c) { return grid[c.getRow()][c.getCol()]; }
-    public List<Ship> getShips() { return ships; }
-    public Ship getShipAt(Coordinate c) { return shipGrid[c.getRow()][c.getCol()]; }
+
+    public CellStatus getCellStatus(Coordinate c) {
+        if (!c.isWithinBounds(size)) {
+            throw new IllegalArgumentException("Coordinate " + c + " is out of bounds for board of size " + size);
+        }
+        return grid[c.getRow()][c.getCol()];
+    }
+
+    public List<Ship> getShips() { return Collections.unmodifiableList(ships); }
+
+    public Ship getShipAt(Coordinate c) {
+        if (!c.isWithinBounds(size)) {
+            throw new IllegalArgumentException("Coordinate " + c + " is out of bounds for board of size " + size);
+        }
+        return shipGrid[c.getRow()][c.getCol()];
+    }
 }

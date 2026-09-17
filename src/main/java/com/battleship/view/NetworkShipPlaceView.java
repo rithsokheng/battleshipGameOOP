@@ -56,7 +56,7 @@ public class NetworkShipPlaceView {
         this.app = app;
         this.controller = controller;
         this.netSession = netSession;
-        this.player = netSession.me;
+        this.player = netSession.getMe();
     }
 
     public StackPane build() {
@@ -147,8 +147,8 @@ public class NetworkShipPlaceView {
         });
         root.requestFocus();
 
-        netSession.session.setOnMessage(this::handleMessage);
-        netSession.session.setOnDisconnected(this::handleDisconnect);
+        netSession.getSession().setOnMessage(this::handleMessage);
+        netSession.getSession().setOnDisconnected(this::handleDisconnect);
 
         refreshAll();
         return root;
@@ -167,9 +167,9 @@ public class NetworkShipPlaceView {
             case "START" -> {
                 // Only the client ever receives this (the host sets its own turn locally
                 // in maybeStartAsHost right before sending START).
-                netSession.myTurn = netSession.isHost
+                netSession.setMyTurn(netSession.isHost()
                         ? "HOST".equals(msg.firstPlayer)
-                        : "CLIENT".equals(msg.firstPlayer);
+                        : "CLIENT".equals(msg.firstPlayer));
                 goToBattle();
             }
             default -> { /* ignore */ }
@@ -191,17 +191,17 @@ public class NetworkShipPlaceView {
         localReady = true;
         readyButton.setDisable(true);
         statusLabel.setText(opponentReady ? "Both fleets deployed \u2014 starting battle\u2026" : "Waiting for opponent to finish deploying\u2026");
-        netSession.session.send(NetMessage.of("READY"));
+        netSession.getSession().send(NetMessage.of("READY"));
         maybeStartAsHost();
     }
 
     private void maybeStartAsHost() {
-        if (netSession.isHost && localReady && opponentReady) {
+        if (netSession.isHost() && localReady && opponentReady) {
             boolean hostFirst = RANDOM.nextBoolean();
-            netSession.myTurn = hostFirst;
+            netSession.setMyTurn(hostFirst);
             NetMessage start = NetMessage.of("START");
             start.firstPlayer = hostFirst ? "HOST" : "CLIENT";
-            netSession.session.send(start);
+            netSession.getSession().send(start);
             goToBattle();
         }
     }
@@ -219,7 +219,7 @@ public class NetworkShipPlaceView {
         alert.setContentText("Leave this match and return to the main menu? This will disconnect your opponent.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            netSession.session.close();
+            netSession.getSession().close();
             app.showMainMenu();
         }
     }
