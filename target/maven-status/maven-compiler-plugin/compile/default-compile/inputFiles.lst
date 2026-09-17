@@ -1,54 +1,54 @@
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\AIFactory.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\AiShotPlan.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\AIStrategy.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\Difficulty.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\HuntTargetAI.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\RandomAI.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\ai\SmartAI.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\controller\GameController.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\controller\LauncherFireResult.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\controller\LauncherLogic.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\Board.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\CellStatus.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\Coordinate.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\GameMode.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\GameState.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\LauncherType.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\Player.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\Ship.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\ShipType.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\ShotResult.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\model\Theater.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\net\EnemyTracker.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\net\NetMessage.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\net\NetUtil.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\net\NetworkGameSession.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\net\NetworkSession.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\persistence\GameSaveDTO.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\persistence\SaveGameService.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\BattleView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\BoardGridPane.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\BoardSelectView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\DecorUtil.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\GameModeSelectView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\GameOverView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\HostLobbyView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\ImageResources.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\JoinLobbyView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\MainApp.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\MainMenuView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\MenuOverlays.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\MultiplayerLobbyView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\NetworkBattleView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\NetworkGameOverView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\NetworkShipPlaceView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\PassScreen.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\QrCodeUtil.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\quiz\NuclearLaunchDialog.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\quiz\NuclearResupplyDialog.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\quiz\QuizBank.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\quiz\QuizQuestion.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\ShipDockPane.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\ShipPlaceView.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\SoundGenerator.java
-C:\Users\Reaksmey\Downloads\Telegram Desktop\battleship_updated (6)\battleship\src\main\java\com\battleship\view\SoundManager.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/AIFactory.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/AIStrategy.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/AiShotPlan.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/Difficulty.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/HuntTargetAI.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/RandomAI.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/ai/SmartAI.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/controller/GameController.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/controller/LauncherFireResult.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/controller/LauncherLogic.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/Board.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/CellStatus.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/Coordinate.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/GameMode.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/GameState.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/LauncherType.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/Player.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/Ship.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/ShipType.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/ShotResult.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/Theater.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/net/EnemyTracker.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/net/NetMessage.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/net/NetUtil.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/net/NetworkGameSession.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/net/NetworkSession.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/persistence/GameSaveDTO.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/persistence/SaveGameService.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/BattleView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/BoardGridPane.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/BoardSelectView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/DecorUtil.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/GameModeSelectView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/GameOverView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/HostLobbyView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/ImageResources.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/JoinLobbyView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/MainApp.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/MainMenuView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/MenuOverlays.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/MultiplayerLobbyView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/NetworkBattleView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/NetworkGameOverView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/NetworkShipPlaceView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/PassScreen.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/QrCodeUtil.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/ShipDockPane.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/ShipPlaceView.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/SoundGenerator.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/SoundManager.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/quiz/NuclearLaunchDialog.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/quiz/NuclearResupplyDialog.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/quiz/QuizBank.java
+/home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/quiz/QuizQuestion.java
