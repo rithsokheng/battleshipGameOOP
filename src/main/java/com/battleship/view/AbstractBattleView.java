@@ -113,8 +113,8 @@ public abstract class AbstractBattleView {
     /** True when the cell has already been HIT/MISS/SUNK and cannot be re-shot. */
     protected abstract boolean isCellAlreadyResolved(Coordinate c);
 
-    /** Ghost highlight style fragment appended to {@link BoardGridPane#BASE_STYLE}. */
-    protected abstract String ghostStyle();
+    /** Ghost highlight style class, e.g. {@link BoardGridPane#GHOST_TARGET}. */
+    protected abstract String ghostStyleClass();
 
     /** Restores one cell after the ghost leaves it. */
     protected abstract void repaintGhostCell(int row, int col);
@@ -128,8 +128,8 @@ public abstract class AbstractBattleView {
     /** UI reaction to rejected nuclear launch codes (re-arm DEFAULT + repaint). */
     protected abstract void onNuclearRejected();
 
-    /** Weapon-button styling per state. */
-    protected abstract String launcherButtonStyle(LauncherButtonState state);
+    /** Weapon-button style class per state, e.g. {@code weapon-button-selected}. */
+    protected abstract String launcherButtonStyleClass(LauncherButtonState state);
 
     /** Confirmation text shown by the shared exit dialog. */
     protected abstract String exitPrompt();
@@ -197,7 +197,7 @@ public abstract class AbstractBattleView {
         int size = enemyGrid.getSize();
         for (Coordinate c : cells) {
             if (!c.isWithinBounds(size)) continue;
-            enemyGrid.getCell(c).setStyle(BoardGridPane.BASE_STYLE + ghostStyle());
+            enemyGrid.setCellState(c, ghostStyleClass());
             ghostCells.add(new int[]{c.getRow(), c.getCol()});
         }
     }
@@ -239,8 +239,8 @@ public abstract class AbstractBattleView {
         LauncherButtonState state = !enabled ? LauncherButtonState.DISABLED
                 : player.getSelectedLauncher() == type ? LauncherButtonState.SELECTED
                 : LauncherButtonState.ENABLED;
-        b.setStyle("-fx-background-radius:8; -fx-border-radius:8; -fx-border-width:1.5; "
-                + "-fx-font-size:12px; -fx-font-weight:bold; " + launcherButtonStyle(state));
+        // The static declarations live in .weapon-button; only the state colour is added here.
+        b.getStyleClass().add(launcherButtonStyleClass(state));
         b.setDisable(!enabled);
 
         b.setOnAction(e -> {

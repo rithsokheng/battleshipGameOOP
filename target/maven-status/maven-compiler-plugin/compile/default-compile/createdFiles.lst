@@ -2,6 +2,7 @@ com/battleship/net/NetMessage$FireResult.class
 com/battleship/view/GameAudio.class
 com/battleship/model/AmmoInventory.class
 com/battleship/model/ShipType.class
+com/battleship/view/SilentAudio.class
 com/battleship/model/LauncherType$2.class
 com/battleship/net/NetworkGameSession.class
 com/battleship/view/MainApp.class
@@ -17,6 +18,7 @@ com/battleship/model/Theater.class
 com/battleship/net/NetUtil.class
 com/battleship/net/NetMessage$Start.class
 com/battleship/view/LocalBattleView$1.class
+com/battleship/view/MusicAudio.class
 com/battleship/model/Turn.class
 com/battleship/view/BoardGridPane.class
 com/battleship/model/GameMode.class
@@ -54,6 +56,7 @@ com/battleship/view/JoinLobbyView.class
 com/battleship/view/SoundGenerator.class
 com/battleship/view/NetworkBattleView.class
 com/battleship/view/quiz/NuclearResupplyDialog.class
+com/battleship/view/AudioSettings.class
 com/battleship/model/GameState.class
 com/battleship/ai/RandomAI.class
 com/battleship/view/AbstractBattleView.class
@@ -61,6 +64,7 @@ com/battleship/net/NetMessage$Ready.class
 com/battleship/net/Role.class
 com/battleship/controller/PlacementService.class
 com/battleship/net/EnemyTracker.class
+com/battleship/view/SfxAudio.class
 com/battleship/view/PassScreen.class
 com/battleship/model/Ship.class
 com/battleship/view/MainMenuView.class
@@ -71,6 +75,7 @@ com/battleship/net/NetMessage$Hello.class
 com/battleship/model/Orientation.class
 com/battleship/view/MenuOverlays.class
 com/battleship/ai/AiShotPlan.class
+com/battleship/view/AbstractShipPlaceView.class
 com/battleship/view/quiz/NuclearLaunchDialog.class
 com/battleship/model/CellStatus.class
 com/battleship/persistence/GameSaveDTO.class

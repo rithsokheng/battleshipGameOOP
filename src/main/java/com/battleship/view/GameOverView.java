@@ -43,10 +43,7 @@ public class GameOverView {
 
         Label banner = new Label(playerWon ? "\uD83C\uDFC6  VICTORY" : "\u2620  DEFEAT");
         banner.setFont(Font.font("Arial Black", FontWeight.BOLD, 52));
-        banner.getStyleClass().add(playerWon ? "app-title" : "danger-text");
-        if (!playerWon) {
-            banner.setStyle("-fx-font-size:52px; -fx-effect: dropshadow(gaussian, rgba(255,92,92,0.55), 28, 0.35, 0, 0);");
-        }
+        banner.getStyleClass().add(playerWon ? "app-title" : "defeat-banner");
 
         Label subtitle = new Label(playerWon
                 ? "\u2693  THE ENEMY FLEET HAS BEEN DESTROYED  \u2693"
@@ -91,9 +88,7 @@ public class GameOverView {
 
         // A soft mood wash over the sea: warm gold for a win, cool red for a loss.
         Region mood = new Region();
-        mood.setStyle(playerWon
-                ? "-fx-background-color: radial-gradient(center 50% 15%, radius 90%, rgba(255,209,102,0.16) 0%, rgba(255,209,102,0.0) 70%);"
-                : "-fx-background-color: radial-gradient(center 50% 15%, radius 90%, rgba(255,70,70,0.16) 0%, rgba(255,70,70,0.0) 70%);");
+        mood.getStyleClass().add(playerWon ? "mood-wash-win" : "mood-wash-loss");
         mood.setMouseTransparent(true);
         mood.prefWidthProperty().bind(root.widthProperty());
         mood.prefHeightProperty().bind(root.heightProperty());
@@ -173,8 +168,7 @@ public class GameOverView {
 
     private VBox statPill(String label, String value) {
         Label v = new Label(value);
-        v.getStyleClass().add("accent-text");
-        v.setStyle("-fx-font-size:20px;");
+        v.getStyleClass().addAll("accent-text", "stat-pill-value");
         Label l = new Label(label);
         l.getStyleClass().add("dim-text");
         VBox box = new VBox(4, v, l);
@@ -185,9 +179,9 @@ public class GameOverView {
 
     private Region statDivider() {
         Region divider = new Region();
+        divider.getStyleClass().add("stat-divider");
         divider.setPrefWidth(1);
         divider.setMaxWidth(1);
-        divider.setStyle("-fx-background-color: rgba(46,93,135,0.6);");
         divider.setPrefHeight(34);
         return divider;
     }

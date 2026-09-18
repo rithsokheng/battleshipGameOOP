@@ -45,10 +45,7 @@ public class NetworkGameOverView {
 
         Label banner = new Label(won ? "\uD83C\uDFC6  VICTORY" : "\u2620  DEFEAT");
         banner.setFont(Font.font("Arial Black", FontWeight.BOLD, 52));
-        banner.getStyleClass().add(won ? "app-title" : "danger-text");
-        if (!won) {
-            banner.setStyle("-fx-font-size:52px; -fx-effect: dropshadow(gaussian, rgba(255,92,92,0.55), 28, 0.35, 0, 0);");
-        }
+        banner.getStyleClass().add(won ? "app-title" : "defeat-banner");
 
         Label subtitle = new Label(won
                 ? "\u2693  THE ENEMY FLEET HAS BEEN DESTROYED  \u2693"
@@ -77,9 +74,7 @@ public class NetworkGameOverView {
         root.getChildren().add(ocean);
 
         Region mood = new Region();
-        mood.setStyle(won
-                ? "-fx-background-color: radial-gradient(center 50% 15%, radius 90%, rgba(255,209,102,0.16) 0%, rgba(255,209,102,0.0) 70%);"
-                : "-fx-background-color: radial-gradient(center 50% 15%, radius 90%, rgba(255,70,70,0.16) 0%, rgba(255,70,70,0.0) 70%);");
+        mood.getStyleClass().add(won ? "mood-wash-win" : "mood-wash-loss");
         mood.setMouseTransparent(true);
         mood.prefWidthProperty().bind(root.widthProperty());
         mood.prefHeightProperty().bind(root.heightProperty());

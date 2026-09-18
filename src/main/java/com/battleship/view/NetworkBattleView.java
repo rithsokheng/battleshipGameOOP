@@ -68,8 +68,8 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected String ghostStyle() {
-        return "-fx-background-color: rgba(232,213,163,0.35);";
+    protected String ghostStyleClass() {
+        return BoardGridPane.GHOST_TARGET;
     }
 
     @Override
@@ -101,11 +101,11 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected String launcherButtonStyle(LauncherButtonState state) {
+    protected String launcherButtonStyleClass(LauncherButtonState state) {
         return switch (state) {
-            case DISABLED -> "-fx-background-color:#122032; -fx-text-fill:#5c7c97; -fx-border-color:#233246;";
-            case SELECTED -> "-fx-background-color:#ffd166; -fx-text-fill:#081a2d; -fx-border-color:#ffd166;";
-            case ENABLED  -> "-fx-background-color:#2e5d87; -fx-text-fill:#f5f7fa; -fx-border-color:#44b8ff;";
+            case DISABLED -> "weapon-button-disabled";
+            case SELECTED -> "weapon-button-selected";
+            case ENABLED  -> "weapon-button-enabled";
         };
     }
 
@@ -137,12 +137,10 @@ public class NetworkBattleView extends AbstractBattleView {
     @Override
     protected Pane assembleLayout() {
         turnLabel = new Label(netSession.isMyTurn() ? "YOUR TURN" : "OPPONENT'S TURN");
-        turnLabel.getStyleClass().add("app-title");
-        turnLabel.setStyle("-fx-font-size:24px;");
+        turnLabel.getStyleClass().addAll("app-title", "screen-title-md");
 
         logLabel = new Label("Select a weapon, then a target on the enemy grid.");
-        logLabel.getStyleClass().add("info-text");
-        logLabel.setStyle("-fx-font-size:13px;");
+        logLabel.getStyleClass().addAll("info-text", "battle-log");
 
         orientationLabel = new Label();
         orientationLabel.getStyleClass().add("dim-text");
@@ -159,6 +157,7 @@ public class NetworkBattleView extends AbstractBattleView {
         enemyBox.setAlignment(Pos.CENTER);
 
         fleetStatusLabel = new Label();
+        fleetStatusLabel.getStyleClass().add("fleet-status-label");
         refreshFleetStatus();
 
         HBox boards = new HBox(30, ownBox, enemyBox);
@@ -262,9 +261,29 @@ public class NetworkBattleView extends AbstractBattleView {
 
     /** I am the attacker: apply the result the defender reported for my shot. */
     private void handleFireResult(NetMessage.FireResult result) {
-        StringBuilder log = new StringBuilder();
+        boolean anyHit = applyCellResults(result.results());
+        String sunkLog = applySunkShips(result.sunkShips());
+
+        logLabel.setText(sunkLog.isEmpty()
+                ? (anyHit ? "Direct hit!" : "Nothing but spray \u2014 miss.")
+                : sunkLog.trim());
+        playResultAudio(anyHit, !sunkLog.isEmpty());
+        refreshFleetStatus();
+
+        if (result.defenderLost()) {
+            goToGameOver(true);
+            return;
+        }
+        handTurnToOpponent();
+    }
+
+    /**
+     * Records and renders every cell the defender reported.
+     * @return {@code true} if any reported cell was a hit or part of a sunk ship
+     */
+    private boolean applyCellResults(List<NetMessage.CellResult> results) {
         boolean anyHit = false;
-        for (NetMessage.CellResult cr : result.results()) {
+        for (NetMessage.CellResult cr : results) {
             Coordinate c = cr.coordinate();
             CellStatus status = cr.outcome();
             if (status == CellStatus.HIT) {
@@ -275,33 +294,40 @@ public class NetworkBattleView extends AbstractBattleView {
                 netSession.getEnemyTracker().recordMiss(c);
                 enemyGrid.renderShot(c, CellStatus.MISS);
             } else if (status == CellStatus.SUNK) {
-                anyHit = true; // cell rendering handled via sunkShips below
+                anyHit = true; // cell rendering handled via the sunkShips list below
             }
         }
-        if (result.sunkShips() != null) {
-            for (NetMessage.SunkShipInfo si : result.sunkShips()) {
-                Ship ship = netSession.getEnemyTracker().recordSunk(si.shipType(), si.cells());
-                enemyGrid.renderSunkShip(ship);
-                log.append(si.shipType().name().replace('_', ' ')).append(" has been sent to the bottom! ");
-            }
+        return anyHit;
+    }
+
+    /**
+     * Records and renders every ship reported sunk.
+     * @return the attack-log fragment for the sunk ships, or an empty string if none
+     */
+    private String applySunkShips(List<NetMessage.SunkShipInfo> sunkShips) {
+        if (sunkShips == null || sunkShips.isEmpty()) return "";
+        StringBuilder log = new StringBuilder();
+        for (NetMessage.SunkShipInfo si : sunkShips) {
+            Ship ship = netSession.getEnemyTracker().recordSunk(si.shipType(), si.cells());
+            enemyGrid.renderSunkShip(ship);
+            log.append(si.shipType().name().replace('_', ' ')).append(" has been sent to the bottom! ");
         }
-        if (log.isEmpty()) {
-            log.append(anyHit ? "Direct hit!" : "Nothing but spray — miss.");
-        }
-        if (anyHit && (result.sunkShips() == null || result.sunkShips().isEmpty())) {
-            audio.playHit();
-        } else if (result.sunkShips() != null && !result.sunkShips().isEmpty()) {
+        return log.toString();
+    }
+
+    /** One sunk sting, else one hit sting, else a miss. */
+    private void playResultAudio(boolean anyHit, boolean anySunk) {
+        if (anySunk) {
             audio.playSunk();
+        } else if (anyHit) {
+            audio.playHit();
         } else {
             audio.playMiss();
         }
-        logLabel.setText(log.toString().trim());
-        refreshFleetStatus();
+    }
 
-        if (result.defenderLost()) {
-            goToGameOver(true);
-            return;
-        }
+    /** My shot is resolved — hand the turn back to the opponent. */
+    private void handTurnToOpponent() {
         netSession.beginOpponentTurn();
         turnLabel.setText("OPPONENT'S TURN");
         enemyGrid.setDisable(true);
@@ -345,7 +371,6 @@ public class NetworkBattleView extends AbstractBattleView {
         int enemyTotal = controller.getSelectedTheater().getTotalShipCount();
         fleetStatusLabel.setText("Your ships lost: " + myLost + " / " + myTotal +
                 "     Enemy ships confirmed sunk: " + enemySunkKnown + " / " + enemyTotal);
-        fleetStatusLabel.setStyle("-fx-text-fill:#f5f7fa; -fx-font-size:12px;");
     }
 
     private void updateOrientationLabel() {

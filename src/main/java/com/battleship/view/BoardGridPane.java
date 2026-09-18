@@ -26,8 +26,25 @@ import java.util.List;
  */
 public class BoardGridPane extends GridPane {
 
-    public static final String BASE_STYLE =
-            "-fx-background-color:#102e4a; -fx-border-color:#2e5d87; -fx-border-width:0.5;";
+    /** Base style class carried by every cell; state classes are toggled on top. */
+    public static final String CELL_CLASS = "board-cell";
+
+    /** Ghost-preview classes, usable via {@link #setCellState(Coordinate, String)}. */
+    public static final String GHOST_VALID = "board-cell-ghost-valid";
+    public static final String GHOST_INVALID = "board-cell-ghost-invalid";
+    public static final String GHOST_TARGET = "board-cell-ghost-target";
+
+    private static final String CELL_SHIP = "board-cell-ship";
+    private static final String CELL_MISS = "board-cell-miss";
+    private static final String CELL_HIT = "board-cell-hit";
+    private static final String CELL_SUNK = "board-cell-sunk";
+
+    /** Every class this grid may toggle on a cell; cleared before a new state is applied. */
+    private static final String[] CELL_STATE_CLASSES = {
+            CELL_SHIP, CELL_MISS, CELL_HIT, CELL_SUNK,
+            GHOST_VALID, GHOST_INVALID, GHOST_TARGET
+    };
+
     private static final int CELL_PX = 42;
 
     private final int size;
@@ -49,7 +66,7 @@ public class BoardGridPane extends GridPane {
             for (int c = 0; c < size; c++) {
                 StackPane cell = new StackPane();
                 cell.setPrefSize(cellPx, cellPx);
-                cell.setStyle(BASE_STYLE);
+                cell.getStyleClass().add(CELL_CLASS);
                 cells[r][c] = cell;
                 add(cell, c, r);
             }
@@ -61,7 +78,18 @@ public class BoardGridPane extends GridPane {
     public int getSize() { return size; }
 
     public void resetCellStyle(int row, int col) {
-        cells[row][col].setStyle(BASE_STYLE);
+        applyCellState(cells[row][col], null);
+    }
+
+    /** Applies a cell state (or {@code null} for the plain base cell) as a style class. */
+    private void applyCellState(StackPane cell, String stateClass) {
+        cell.getStyleClass().removeAll(CELL_STATE_CLASSES);
+        if (stateClass != null) cell.getStyleClass().add(stateClass);
+    }
+
+    /** Applies one of the ghost/state classes to a cell; used by the ghost previews. */
+    public void setCellState(Coordinate c, String stateClass) {
+        applyCellState(cells[c.getRow()][c.getCol()], stateClass);
     }
 
     /** Renders a placed (not-yet-shot) ship, used during placement. */
@@ -75,7 +103,7 @@ public class BoardGridPane extends GridPane {
             Coordinate c = occupied.get(i);
             StackPane cell = cells[c.getRow()][c.getCol()];
             cell.getChildren().clear();
-            cell.setStyle(BASE_STYLE + "-fx-background-color:#2e6690;");
+            applyCellState(cell, CELL_SHIP);
 
             if (sprite != null) {
                 // The source art is a single square image per hull; slice out the
@@ -129,7 +157,7 @@ public class BoardGridPane extends GridPane {
         cell.getChildren().clear();
         switch (status) {
             case MISS -> {
-                cell.setStyle(BASE_STYLE + "-fx-background-color:#081a2d;");
+                applyCellState(cell, CELL_MISS);
                 Image splash = ImageResources.effect("miss-splash");
                 if (splash != null) {
                     ImageView iv = new ImageView(splash);
@@ -140,12 +168,12 @@ public class BoardGridPane extends GridPane {
                 } else {
                     StackPane dot = new StackPane();
                     dot.setMaxSize(8, 8);
-                    dot.setStyle("-fx-background-color:#f5f7fa; -fx-background-radius:50%;");
+                    dot.getStyleClass().add("board-miss-dot");
                     cell.getChildren().add(dot);
                 }
             }
             case HIT -> {
-                cell.setStyle(BASE_STYLE + "-fx-background-color:#3a1a1a;");
+                applyCellState(cell, CELL_HIT);
                 if (!playFireFlipbook(cell)) {
                     Image fire = ImageResources.effect("hit-explosion");
                     if (fire != null) {
@@ -156,7 +184,7 @@ public class BoardGridPane extends GridPane {
                         cell.getChildren().add(iv);
                     } else {
                         Label x = new Label("\u00D7");
-                        x.setStyle("-fx-text-fill:#ff5c5c; -fx-font-size:20px; -fx-font-weight:bold;");
+                        x.getStyleClass().add("board-hit-marker");
                         cell.getChildren().add(x);
                     }
                 }
@@ -179,8 +207,7 @@ public class BoardGridPane extends GridPane {
         for (Coordinate c : ship.getOccupiedCells()) {
             StackPane cell = cells[c.getRow()][c.getCol()];
             cell.getChildren().clear();
-            cell.setStyle("-fx-background-color:#5a2a2a; -fx-border-color:#ff5c5c; " +
-                          "-fx-border-width:2; -fx-border-radius:2;");
+            applyCellState(cell, CELL_SUNK);
             if (fire != null) {
                 ImageView iv = new ImageView(fire);
                 iv.setFitWidth(cellPx * 0.85);
@@ -189,8 +216,7 @@ public class BoardGridPane extends GridPane {
                 cell.getChildren().add(iv);
             }
             Line diagonal = new Line(-14, -14, 14, 14);
-            diagonal.setStroke(javafx.scene.paint.Color.web("#ffd166"));
-            diagonal.setStrokeWidth(2);
+            diagonal.getStyleClass().add("board-sunk-cross");
             cell.getChildren().add(diagonal);
             StackPane.setAlignment(diagonal, Pos.CENTER);
         }
@@ -200,7 +226,7 @@ public class BoardGridPane extends GridPane {
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 cells[r][c].getChildren().clear();
-                cells[r][c].setStyle(BASE_STYLE);
+                applyCellState(cells[r][c], null);
             }
         }
     }

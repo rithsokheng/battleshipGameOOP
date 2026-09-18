@@ -2,6 +2,7 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.controller.LauncherFireResult;
+import com.battleship.model.Board;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.GameMode;
@@ -10,10 +11,12 @@ import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
 import com.battleship.model.Ship;
+import com.battleship.model.ShotResult;
 import com.battleship.view.quiz.NuclearResupplyDialog;
 import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
@@ -76,8 +79,8 @@ public class LocalBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected String ghostStyle() {
-        return "-fx-background-color: rgba(255,209,102,0.35);";
+    protected String ghostStyleClass() {
+        return BoardGridPane.GHOST_TARGET;
     }
 
     @Override
@@ -109,11 +112,11 @@ public class LocalBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected String launcherButtonStyle(LauncherButtonState state) {
+    protected String launcherButtonStyleClass(LauncherButtonState state) {
         return switch (state) {
-            case DISABLED -> "-fx-background-color:#122032; -fx-text-fill:#4a5c70; -fx-border-color:#233246;";
-            case SELECTED -> "-fx-background-color:#ffd166; -fx-text-fill:#081a2d; -fx-border-color:#ffd166;";
-            case ENABLED  -> "-fx-background-color:#123a58; -fx-text-fill:#dff1ff; -fx-border-color:#2e5d87;";
+            case DISABLED -> "weapon-button-disabled";
+            case SELECTED -> "weapon-button-selected";
+            case ENABLED  -> "weapon-button-enabled";
         };
     }
 
@@ -145,17 +148,39 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected Pane assembleLayout() {
-        Player current = viewPerspective();
-        Player opponent = viewOpponent();
-
         orientationLabel = new Label();
         orientationLabel.getStyleClass().add("dim-text");
         updateOrientationLabel();
 
+        VBox leftColumn = buildLeftColumn();
+        VBox sidePanel = buildSidePanel();
+        refreshShipStatusBar();
+        addLogEntry("Select a weapon, then a target on the enemy grid.", "info");
+
+        HBox content = new HBox(24, leftColumn, sidePanel);
+        content.setAlignment(Pos.TOP_CENTER);
+
+        HBox commandBar = buildCommandBar(viewPerspective(), viewOpponent());
+        VBox layout = new VBox(16, commandBar, content);
+        layout.setAlignment(Pos.TOP_CENTER);
+        layout.setPadding(new Insets(20));
+        return layout;
+    }
+
+    /** Weapon bar stacked above the two board cards. */
+    private VBox buildLeftColumn() {
         VBox weaponsCard = new VBox(8, launcherBar, orientationLabel);
         weaponsCard.setAlignment(Pos.CENTER);
         weaponsCard.getStyleClass().add("side-card");
 
+        VBox leftColumn = new VBox(16, weaponsCard, buildBoardsRow());
+        leftColumn.setAlignment(Pos.TOP_CENTER);
+        HBox.setHgrow(leftColumn, Priority.ALWAYS);
+        return leftColumn;
+    }
+
+    /** Own fleet beside enemy waters, each with its own afloat counter. */
+    private HBox buildBoardsRow() {
         ownShipsLeftLabel = new Label();
         ownShipsLeftLabel.getStyleClass().add("ships-left-badge");
         enemyShipsLeftLabel = new Label();
@@ -167,29 +192,13 @@ public class LocalBattleView extends AbstractBattleView {
 
         HBox boardsRow = new HBox(24, ownBox, enemyBox);
         boardsRow.setAlignment(Pos.TOP_CENTER);
-
-        VBox leftColumn = new VBox(16, weaponsCard, boardsRow);
-        leftColumn.setAlignment(Pos.TOP_CENTER);
-        HBox.setHgrow(leftColumn, Priority.ALWAYS);
-
-        VBox sidePanel = buildSidePanel();
-        refreshShipStatusBar();
-        addLogEntry("Select a weapon, then a target on the enemy grid.", "info");
-
-        HBox content = new HBox(24, leftColumn, sidePanel);
-        content.setAlignment(Pos.TOP_CENTER);
-
-        HBox commandBar = buildCommandBar(current, opponent);
-        VBox layout = new VBox(16, commandBar, content);
-        layout.setAlignment(Pos.TOP_CENTER);
-        layout.setPadding(new Insets(20));
-        return layout;
+        return boardsRow;
     }
 
     @Override
     protected StackPane decorateRoot(Pane layout) {
         StackPane root = new StackPane();
-        javafx.scene.canvas.Canvas ocean = DecorUtil.animatedOceanScene(root, 0.0);
+        Canvas ocean = DecorUtil.animatedOceanScene(root, 0.0);
         root.getChildren().add(ocean);
         root.getChildren().add(layout);
         return root;
@@ -262,7 +271,7 @@ public class LocalBattleView extends AbstractBattleView {
     }
 
     private void applyResult(BoardGridPane grid, LauncherFireResult result) {
-        for (com.battleship.model.ShotResult r : result.results()) {
+        for (ShotResult r : result.results()) {
             if (r.outcome() != CellStatus.SUNK) {
                 grid.renderShot(r.coordinate(), r.outcome());
             }
@@ -371,17 +380,34 @@ public class LocalBattleView extends AbstractBattleView {
     // ---------- Side console (fleet status + attack log) ----------
 
     private VBox buildSidePanel() {
+        VBox side = new VBox(16, buildRadarCard(), buildFleetStatusCard(), buildAttackLogCard());
+        side.setPrefWidth(260);
+        side.setMinWidth(260);
+        side.setMaxWidth(260);
+        return side;
+    }
+
+    /** Decorative radar sweep. */
+    private VBox buildRadarCard() {
         StackPane radar = DecorUtil.animatedRadarSweep(150);
         VBox radarCard = new VBox(radar);
         radarCard.setAlignment(Pos.CENTER);
         radarCard.getStyleClass().add("side-card");
+        return radarCard;
+    }
 
+    /** Per-ship damage bars for the enemy fleet. */
+    private VBox buildFleetStatusCard() {
         Label fleetTitle = new Label("ENEMY FLEET STATUS");
         fleetTitle.getStyleClass().add("side-card-title");
         shipStatusBar = new VBox(6);
         VBox fleetCard = new VBox(12, fleetTitle, shipStatusBar);
         fleetCard.getStyleClass().add("side-card");
+        return fleetCard;
+    }
 
+    /** Scrolling, newest-first attack log. */
+    private VBox buildAttackLogCard() {
         Label logTitle = new Label("ATTACK LOG");
         logTitle.getStyleClass().add("side-card-title");
         attackLogList = new VBox(6);
@@ -396,12 +422,7 @@ public class LocalBattleView extends AbstractBattleView {
         VBox logCard = new VBox(12, logTitle, scroll);
         logCard.getStyleClass().add("side-card");
         VBox.setVgrow(logCard, Priority.ALWAYS);
-
-        VBox side = new VBox(16, radarCard, fleetCard, logCard);
-        side.setPrefWidth(260);
-        side.setMinWidth(260);
-        side.setMaxWidth(260);
-        return side;
+        return logCard;
     }
 
     private void addLogEntry(String text, String type) {
@@ -459,7 +480,7 @@ public class LocalBattleView extends AbstractBattleView {
         return row;
     }
 
-    private void renderExistingShots(BoardGridPane grid, com.battleship.model.Board board) {
+    private void renderExistingShots(BoardGridPane grid, Board board) {
         for (int r = 0; r < board.getSize(); r++) {
             for (int c = 0; c < board.getSize(); c++) {
                 Coordinate coord = new Coordinate(r, c);

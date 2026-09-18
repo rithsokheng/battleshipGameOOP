@@ -96,7 +96,7 @@ public class ShipDockPane extends VBox {
         block.setEffect(new javafx.scene.effect.DropShadow(8, Color.web("#44b8ff", 0.4)));
 
         block.setUserData(type);
-        block.setStyle("-fx-cursor:hand;");
+        block.getStyleClass().add("ship-block");
 
         block.setOnDragDetected(event -> {
             Dragboard db = block.startDragAndDrop(TransferMode.MOVE);

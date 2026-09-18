@@ -610,3 +610,134 @@
     -fx-background-color: rgba(255,255,255,0.02);
     -fx-text-fill: #8fafc7;
 }
+
+/* ============================================================
+   Board cells (BoardGridPane)
+   Cell state is applied as a style CLASS, never as inline CSS.
+   ============================================================ */
+
+.board-cell {
+    -fx-background-color: #102e4a;
+    -fx-border-color: #2e5d87;
+    -fx-border-width: 0.5;
+}
+.board-cell-ship {
+    -fx-background-color: #2e6690;
+}
+.board-cell-miss {
+    -fx-background-color: #081a2d;
+}
+.board-cell-hit {
+    -fx-background-color: #3a1a1a;
+}
+.board-cell-sunk {
+    -fx-background-color: #5a2a2a;
+    -fx-border-color: #ff5c5c;
+    -fx-border-width: 2;
+    -fx-border-radius: 2;
+}
+
+/* Ghost previews while dragging a ship into place (deployment screens). */
+.board-cell-ghost-valid {
+    -fx-background-color: rgba(232,213,163,0.4);
+}
+.board-cell-ghost-invalid {
+    -fx-background-color: rgba(200,58,58,0.5);
+}
+/* Ghost preview of the weapon trajectory (both battle screens). */
+.board-cell-ghost-target {
+    -fx-background-color: rgba(255,209,102,0.35);
+}
+
+/* Painted inside a cell by BoardGridPane. */
+.board-miss-dot {
+    -fx-background-color: #f5f7fa;
+    -fx-background-radius: 50%;
+}
+.board-hit-marker {
+    -fx-text-fill: #ff5c5c;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+.board-sunk-cross {
+    -fx-stroke: #ffd166;
+    -fx-stroke-width: 2;
+}
+
+/* ---------- Weapon button states ----------
+   A weapon button carries .weapon-button plus exactly one of these. */
+
+.weapon-button-disabled {
+    -fx-background-color: #122032;
+    -fx-text-fill: #5c7c97;
+    -fx-border-color: #233246;
+}
+.weapon-button-selected {
+    -fx-background-color: #ffd166;
+    -fx-text-fill: #081a2d;
+    -fx-border-color: #ffd166;
+}
+.weapon-button-enabled {
+    -fx-background-color: #2e5d87;
+    -fx-text-fill: #f5f7fa;
+    -fx-border-color: #44b8ff;
+}
+
+/* ---------- Small one-property utilities (replace inline CSS) ---------- */
+
+.orientation-label {
+    -fx-font-size: 13px;
+}
+.placement-count {
+    -fx-text-fill: #f5f7fa;
+    -fx-font-size: 14px;
+}
+.placement-count-strong {
+    -fx-text-fill: #f5f7fa;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+.screen-title-md {
+    -fx-font-size: 24px;
+}
+.board-card-title-lg {
+    -fx-font-size: 15px;
+}
+.rotate-hint {
+    -fx-text-fill: #ffd166;
+    -fx-padding: 8 14;
+}
+.battle-log {
+    -fx-font-size: 13px;
+}
+.fleet-status-label {
+    -fx-text-fill: #f5f7fa;
+    -fx-font-size: 12px;
+}
+.ship-block {
+    -fx-cursor: hand;
+}
+
+/* ---------- Game-over screens ---------- */
+
+/* Defeat banner: same size as the shared .app-title but haloed in red. */
+.defeat-banner {
+    -fx-font-size: 52px;
+    -fx-effect: dropshadow(gaussian, rgba(255,92,92,0.55), 28, 0.35, 0, 0);
+}
+
+/* Full-bleed mood wash over the sea: warm gold for a win, cool red for a loss. */
+.mood-wash-win {
+    -fx-background-color: radial-gradient(center 50% 15%, radius 90%, rgba(255,209,102,0.16) 0%, rgba(255,209,102,0.0) 70%);
+}
+.mood-wash-loss {
+    -fx-background-color: radial-gradient(center 50% 15%, radius 90%, rgba(255,70,70,0.16) 0%, rgba(255,70,70,0.0) 70%);
+}
+
+.stat-pill-value {
+    -fx-font-size: 20px;
+}
+
+.stat-divider {
+    -fx-background-color: rgba(46,93,135,0.6);
+}
