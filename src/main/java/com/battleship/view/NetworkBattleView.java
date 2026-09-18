@@ -192,10 +192,10 @@ public class NetworkBattleView extends AbstractBattleView {
 
     private void handleMessage(NetMessage msg) {
         if (msg == null) return;
-        switch (msg) {
-            case NetMessage.Fire fire -> handleIncomingFire(fire);
-            case NetMessage.FireResult result -> handleFireResult(result);
-            default -> { /* ignore */ }
+        if (msg instanceof NetMessage.Fire) {
+            handleIncomingFire((NetMessage.Fire) msg);
+        } else if (msg instanceof NetMessage.FireResult) {
+            handleFireResult((NetMessage.FireResult) msg);
         }
     }
 
