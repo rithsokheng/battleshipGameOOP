@@ -2,6 +2,7 @@ package com.battleship.net;
 
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
+import com.battleship.model.Orientation;
 import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 
@@ -33,7 +34,7 @@ public class EnemyTracker {
 
     public Ship recordSunk(ShipType type, List<Coordinate> cells) {
         for (Coordinate c : cells) grid[c.getRow()][c.getCol()] = CellStatus.SUNK;
-        Ship ship = new Ship(type, cells, true);
+        Ship ship = new Ship(type, cells, Orientation.HORIZONTAL);
         knownSunkShips.add(ship);
         return ship;
     }

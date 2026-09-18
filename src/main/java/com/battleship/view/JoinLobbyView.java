@@ -96,23 +96,20 @@ public class JoinLobbyView {
                 session -> {
                     status.setText("Connected — sending join code\u2026");
                     session.setOnMessage(msg -> handleWelcome(session, msg));
-                    NetMessage hello = NetMessage.of("HELLO");
-                    hello.code = code;
-                    session.send(hello);
+                    session.send(new NetMessage.Hello(code));
                 },
                 error -> showError("Couldn't connect: " + error.getMessage()));
     }
 
     private void handleWelcome(NetworkSession session, NetMessage msg) {
-        if (msg == null) return;
-        if ("REJECT".equals(msg.type)) {
+        if (msg instanceof NetMessage.Reject) {
             session.close();
             showError("Host rejected the connection (wrong code?).");
             return;
         }
-        if (!"WELCOME".equals(msg.type)) return;
+        if (!(msg instanceof NetMessage.Welcome welcome)) return;
 
-        Theater theater = Theater.valueOf(msg.theater);
+        Theater theater = Theater.valueOf(welcome.theater());
         int size = theater.getBoardSize();
         controller.setTheater(theater); // sets up selectedTheater so placement helpers work below
 

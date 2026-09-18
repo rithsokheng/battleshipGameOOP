@@ -6,24 +6,33 @@ import java.util.List;
 /**
  * The 3 launcher types a player can select before firing.
  * DEFAULT is always available with infinite ammo; LEVEL_2 is a limited-ammo
- * weapon that only unlocks on larger boards. NUCLEAR is now available on
- * every battlefield size (5x5, 8x8, 10x10), starting with a single warhead
- * on each, which auto-resupplies after use.
+ * weapon that only unlocks on larger boards. NUCLEAR is available on every
+ * battlefield size (5x5, 8x8, 10x10), starting with a single warhead on each,
+ * which auto-resupplies after use.
  *
- * Each constant implements its own blast-pattern logic via
- * {@link #getTargetCells(Coordinate, boolean)}.
+ * Every constant implements its own behavior via abstract-method overrides
+ * (availability, starting ammo, blast pattern, pattern dimensions) — adding a
+ * new launcher requires adding exactly one enum constant and nothing else
+ * (Open/Closed Principle).
  */
 public enum LauncherType {
 
     DEFAULT("Default", 1) {
         @Override
-        public List<Coordinate> getTargetCells(Coordinate anchor, boolean horizontal) {
+        public List<Coordinate> getTargetCells(Coordinate anchor, Orientation orientation) {
             return List.of(anchor);
         }
+        @Override
+        public boolean isAvailableFor(int boardSize) { return true; }
+        @Override
+        public int getStartingAmmo(int boardSize) { return Integer.MAX_VALUE; } // infinite
+        @Override
+        public int[][] patternDimensions() { return new int[][]{{1, 1}}; }
     },
     LEVEL_2("Level 2", 3) {
         @Override
-        public List<Coordinate> getTargetCells(Coordinate anchor, boolean horizontal) {
+        public List<Coordinate> getTargetCells(Coordinate anchor, Orientation orientation) {
+            boolean horizontal = orientation.isHorizontal();
             List<Coordinate> cells = new ArrayList<>(3);
             for (int i = 0; i < 3; i++) {
                 int r = horizontal ? anchor.getRow() : anchor.getRow() + i;
@@ -32,10 +41,19 @@ public enum LauncherType {
             }
             return cells;
         }
+        @Override
+        public boolean isAvailableFor(int boardSize) { return boardSize >= 8; }
+        @Override
+        public int getStartingAmmo(int boardSize) {
+            return boardSize >= 10 ? 3 : (boardSize >= 8 ? 2 : 0);
+        }
+        @Override
+        public int[][] patternDimensions() { return new int[][]{{1, 3}, {3, 1}}; }
     },
     NUCLEAR("Nuclear", 6) {
         @Override
-        public List<Coordinate> getTargetCells(Coordinate anchor, boolean horizontal) {
+        public List<Coordinate> getTargetCells(Coordinate anchor, Orientation orientation) {
+            boolean horizontal = orientation.isHorizontal();
             int rows = horizontal ? 2 : 3;
             int cols = horizontal ? 3 : 2;
             List<Coordinate> cells = new ArrayList<>(6);
@@ -46,6 +64,12 @@ public enum LauncherType {
             }
             return cells;
         }
+        @Override
+        public boolean isAvailableFor(int boardSize) { return true; }
+        @Override
+        public int getStartingAmmo(int boardSize) { return 1; }
+        @Override
+        public int[][] patternDimensions() { return new int[][]{{2, 3}, {3, 2}}; }
     };
 
     private final String label;
@@ -63,26 +87,21 @@ public enum LauncherType {
      * Computes the list of coordinates that this launcher's blast pattern covers,
      * given an anchor coordinate and orientation.
      *
-     * @param anchor     the cell the player clicked (top-left corner for area weapons)
-     * @param horizontal true = line/rect grows rightward; false = grows downward
+     * @param anchor      the cell the player clicked (top-left corner for area weapons)
+     * @param orientation HORIZONTAL = line/rect grows rightward; VERTICAL = grows downward
      */
-    public abstract List<Coordinate> getTargetCells(Coordinate anchor, boolean horizontal);
+    public abstract List<Coordinate> getTargetCells(Coordinate anchor, Orientation orientation);
 
     /** Whether this launcher can be used at all on a board of the given size. */
-    public boolean isAvailableFor(int boardSize) {
-        return switch (this) {
-            case DEFAULT -> true;
-            case LEVEL_2 -> boardSize >= 8;
-            case NUCLEAR -> true; // unlocked on all battlefields: 5x5, 8x8, 10x10
-        };
-    }
+    public abstract boolean isAvailableFor(int boardSize);
 
     /** Starting ammo for a battle on a board of the given size. */
-    public int getStartingAmmo(int boardSize) {
-        return switch (this) {
-            case DEFAULT -> Integer.MAX_VALUE; // infinite
-            case LEVEL_2 -> boardSize >= 10 ? 3 : (boardSize >= 8 ? 2 : 0);
-            case NUCLEAR -> 1; // one warhead to start on every battlefield size
-        };
-    }
+    public abstract int getStartingAmmo(int boardSize);
+
+    /**
+     * The blast-block dimensions this launcher covers, as {height, width} pairs —
+     * one pair per orientation (HORIZONTAL first, then VERTICAL). Lets callers
+     * (e.g. SmartAI) evaluate area coverage without hardcoding type-specific dims.
+     */
+    public abstract int[][] patternDimensions();
 }

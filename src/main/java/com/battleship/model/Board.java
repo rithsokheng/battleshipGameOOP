@@ -27,7 +27,8 @@ public class Board {
         }
     }
 
-    private List<Coordinate> computeCells(ShipType type, Coordinate start, boolean horizontal) {
+    private List<Coordinate> computeCells(ShipType type, Coordinate start, Orientation orientation) {
+        boolean horizontal = orientation.isHorizontal();
         List<Coordinate> cells = new ArrayList<>();
         for (int i = 0; i < type.getSize(); i++) {
             int r = horizontal ? start.getRow() : start.getRow() + i;
@@ -38,8 +39,8 @@ public class Board {
     }
 
     /** Validates ship placement without mutating state. */
-    public boolean isValidPlacement(ShipType type, Coordinate start, boolean horizontal) {
-        List<Coordinate> cells = computeCells(type, start, horizontal);
+    public boolean isValidPlacement(ShipType type, Coordinate start, Orientation orientation) {
+        List<Coordinate> cells = computeCells(type, start, orientation);
         for (Coordinate c : cells) {
             if (!c.isWithinBounds(size)) return false;
             if (shipGrid[c.getRow()][c.getCol()] != null) return false;
@@ -48,10 +49,10 @@ public class Board {
     }
 
     /** Places a ship of the given type/orientation if valid; returns false otherwise. */
-    public boolean placeShip(ShipType type, Coordinate start, boolean horizontal) {
-        if (!isValidPlacement(type, start, horizontal)) return false;
-        List<Coordinate> cells = computeCells(type, start, horizontal);
-        Ship ship = new Ship(type, cells, horizontal);
+    public boolean placeShip(ShipType type, Coordinate start, Orientation orientation) {
+        if (!isValidPlacement(type, start, orientation)) return false;
+        List<Coordinate> cells = computeCells(type, start, orientation);
+        Ship ship = new Ship(type, cells, orientation);
         for (Coordinate c : cells) {
             shipGrid[c.getRow()][c.getCol()] = ship;
             grid[c.getRow()][c.getCol()] = CellStatus.SHIP;

@@ -33,5 +33,15 @@ public class NetworkGameSession {
     public Player getMe() { return me; }
     public EnemyTracker getEnemyTracker() { return enemyTracker; }
     public boolean isMyTurn() { return myTurn; }
-    public void setMyTurn(boolean myTurn) { this.myTurn = myTurn; }
+
+    /** Grants the local player the turn (after a START or an answered FIRE). */
+    public void beginMyTurn() { this.myTurn = true; }
+
+    /** Hands the turn to the remote opponent (after firing or when START says so). */
+    public void beginOpponentTurn() { this.myTurn = false; }
+
+    /** Applies the host's START decision: hostMovesFirst determines whose turn it is. */
+    public void beginMatch(boolean hostMovesFirst) {
+        this.myTurn = (isHost == hostMovesFirst);
+    }
 }

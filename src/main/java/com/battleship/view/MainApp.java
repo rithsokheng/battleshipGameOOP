@@ -64,7 +64,7 @@ public class MainApp extends Application {
     }
 
     public void showBattle() {
-        setRoot(new BattleView(this, controller).build());
+        setRoot(new LocalBattleView(this, controller).build());
     }
 
     public void showGameOver(Player winner) {

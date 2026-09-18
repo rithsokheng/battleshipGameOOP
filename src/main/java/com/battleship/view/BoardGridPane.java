@@ -2,6 +2,7 @@ package com.battleship.view;
 
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
+import com.battleship.model.Orientation;
 import com.battleship.model.Ship;
 import javafx.animation.KeyFrame;
 import javafx.animation.ScaleTransition;
@@ -65,8 +66,8 @@ public class BoardGridPane extends GridPane {
 
     /** Renders a placed (not-yet-shot) ship, used during placement. */
     public void renderShip(Ship ship) {
-        boolean horizontal = ship.isHorizontal();
-        Image sprite = ImageResources.ship(ship.getType(), horizontal);
+        Orientation orientation = ship.getOrientation();
+        Image sprite = ImageResources.ship(ship.getType(), orientation);
         List<Coordinate> occupied = ship.getOccupiedCells();
         int len = occupied.size();
 
@@ -79,6 +80,7 @@ public class BoardGridPane extends GridPane {
             if (sprite != null) {
                 // The source art is a single square image per hull; slice out the
                 // portion that belongs to this cell along the ship's long axis.
+                boolean horizontal = orientation.isHorizontal();
                 double sliceW = horizontal ? sprite.getWidth() / len : sprite.getWidth();
                 double sliceH = horizontal ? sprite.getHeight() : sprite.getHeight() / len;
                 double x = horizontal ? i * sliceW : 0;

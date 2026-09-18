@@ -1,64 +1,51 @@
 package com.battleship.net;
 
+import com.battleship.model.CellStatus;
+import com.battleship.model.Coordinate;
+import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
+import com.battleship.model.ShipType;
+
 import java.util.List;
 
 /**
- * Wire format for all host&lt;-&gt;client messages: one JSON object per line,
- * serialized/deserialized with Gson. Only the fields relevant to `type` are
- * populated for any given message; the rest stay null/default.
+ * Type-safe wire protocol for host&lt;-&gt;client messages: each variant is its
+ * own record carrying only the fields it needs (sealed hierarchy — the compiler
+ * enforces exhaustiveness; stringly-typed dispatch like `case "BANANA"` is
+ * impossible).
  *
- * Message types:
- *  HELLO        client -> host    : {code}                 first message after TCP connect
- *  WELCOME      host -> client    : {theater}               accepted; battlefield size to use
- *  REJECT       host -> client    : {reason}                bad code / host busy; connection will close
- *  READY        either direction  : (no fields)              sender has finished ship placement
- *  START        host -> client    : {firstPlayer}            "HOST" or "CLIENT" goes first
- *  FIRE         attacker -> defender : {launcherType, anchorRow, anchorCol, horizontal}
- *  FIRE_RESULT  defender -> attacker : {results, sunkShips, defenderLost}
+ * Wire format: one JSON object per line via {@link NetMessageCodec}, which adds
+ * a "type" discriminator field for Gson transport.
+ *
+ * Message flow:
+ *   HELLO        client -> host       first message after TCP connect (join code)
+ *   WELCOME      host -> client       accepted; battlefield to use
+ *   REJECT       host -> client       bad code / host busy; connection will close
+ *   READY        either direction     sender has finished ship placement
+ *   START        host -> client       "HOST" or "CLIENT" goes first
+ *   FIRE         attacker -> defender launcher, anchor cell and orientation
+ *   FIRE_RESULT  defender -> attacker resolved cells, sunk ships, lost flag
  */
-public class NetMessage {
+public sealed interface NetMessage {
 
-    public String type;
+    record Hello(String code) implements NetMessage { }
 
-    // HELLO
-    public String code;
+    record Welcome(String theater) implements NetMessage { }
 
-    // WELCOME
-    public String theater;
+    record Reject(String reason) implements NetMessage { }
 
-    // REJECT
-    public String reason;
+    record Ready() implements NetMessage { }
 
-    // START
-    public String firstPlayer;
+    record Start(String firstPlayer) implements NetMessage { }
 
-    // FIRE
-    public String launcherType;
-    public int anchorRow;
-    public int anchorCol;
-    public boolean horizontal;
+    record Fire(LauncherType launcherType, Coordinate anchor, Orientation orientation) implements NetMessage { }
 
-    // FIRE_RESULT
-    public List<CellResult> results;
-    public List<SunkInfo> sunkShips;
-    public boolean defenderLost;
+    record FireResult(List<CellResult> results, List<SunkShipInfo> sunkShips, boolean defenderLost)
+            implements NetMessage { }
 
-    public static NetMessage of(String type) {
-        NetMessage m = new NetMessage();
-        m.type = type;
-        return m;
-    }
-
-    /** One resolved cell from a FIRE_RESULT: outcome is HIT, MISS, or SUNK. */
-    public static class CellResult {
-        public int row;
-        public int col;
-        public String outcome;
-    }
+    /** One resolved cell from a FIRE_RESULT. */
+    record CellResult(Coordinate coordinate, CellStatus outcome) { }
 
     /** A ship that was sunk by a FIRE_RESULT, with every cell it occupied. */
-    public static class SunkInfo {
-        public String shipType;
-        public List<int[]> cells; // each entry is {row, col}
-    }
+    record SunkShipInfo(ShipType shipType, List<Coordinate> cells) { }
 }

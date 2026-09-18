@@ -5,6 +5,7 @@ import com.battleship.model.Board;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
 import com.battleship.model.ShotResult;
 
 import java.security.SecureRandom;
@@ -67,7 +68,7 @@ public class HuntTargetAI implements AIStrategy {
             }
             List<Coordinate> pool = parity.isEmpty() ? unshot : parity;
             Coordinate anchor = pool.get(random.nextInt(pool.size()));
-            return new AiShotPlan(LauncherType.LEVEL_2, anchor, random.nextBoolean());
+            return new AiShotPlan(LauncherType.LEVEL_2, anchor, Orientation.random(random));
         }
         return AIStrategy.super.chooseShotPlan(enemyBoard, ammo);
     }

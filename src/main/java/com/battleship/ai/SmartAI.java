@@ -1,6 +1,14 @@
 package com.battleship.ai;
 
-import com.battleship.model.*;
+import com.battleship.model.AmmoInventory;
+import com.battleship.model.Board;
+import com.battleship.model.CellStatus;
+import com.battleship.model.Coordinate;
+import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
+import com.battleship.model.Ship;
+import com.battleship.model.ShipType;
+import com.battleship.model.ShotResult;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -43,14 +51,14 @@ public class SmartAI implements AIStrategy {
             int len = type.getSize();
             for (int r = 0; r < size; r++) {
                 for (int c = 0; c <= size - len; c++) {
-                    if (fits(enemyBoard, r, c, len, true)) {
+                    if (fits(enemyBoard, r, c, len, Orientation.HORIZONTAL)) {
                         for (int i = 0; i < len; i++) density[r][c + i]++;
                     }
                 }
             }
             for (int c = 0; c < size; c++) {
                 for (int r = 0; r <= size - len; r++) {
-                    if (fits(enemyBoard, r, c, len, false)) {
+                    if (fits(enemyBoard, r, c, len, Orientation.VERTICAL)) {
                         for (int i = 0; i < len; i++) density[r + i][c]++;
                     }
                 }
@@ -100,10 +108,10 @@ public class SmartAI implements AIStrategy {
         return pool.get(random.nextInt(pool.size()));
     }
 
-    private boolean fits(Board board, int row, int col, int len, boolean horizontal) {
+    private boolean fits(Board board, int row, int col, int len, Orientation orientation) {
         for (int i = 0; i < len; i++) {
-            int r = horizontal ? row : row + i;
-            int c = horizontal ? col + i : col;
+            int r = orientation.isHorizontal() ? row : row + i;
+            int c = orientation.isHorizontal() ? col + i : col;
             CellStatus status = board.getCellStatus(new Coordinate(r, c));
             // A cell already known as MISS or SUNK cannot host a live ship.
             if (status == CellStatus.MISS || status == CellStatus.SUNK) return false;
@@ -120,7 +128,7 @@ public class SmartAI implements AIStrategy {
     @Override
     public AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
         if (targetQueue.hasTargets()) {
-            return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), true);
+            return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), Orientation.HORIZONTAL);
         }
 
         int size = enemyBoard.getSize();
@@ -132,24 +140,23 @@ public class SmartAI implements AIStrategy {
             AiShotPlan plan = bestBlock(enemyBoard, LauncherType.LEVEL_2);
             if (plan != null) return plan;
         }
-        return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), true);
+        return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), Orientation.HORIZONTAL);
     }
 
     /** Finds the best-scoring placement for an area weapon; null if not worth the ammo. */
     private AiShotPlan bestBlock(Board board, LauncherType type) {
         int size = board.getSize();
-        // Use the type's own cell count to derive dimensions
-        int[][] dims = type == LauncherType.NUCLEAR
-                ? new int[][]{{2, 3}, {3, 2}}
-                : new int[][]{{1, 3}, {3, 1}};
+        // Ask the launcher type for its own blast-block dimensions (OCP-safe):
+        // no hardcoded per-type dims here.
+        int[][] dims = type.patternDimensions();
 
         int bestScore = -1;
         Coordinate bestAnchor = null;
-        boolean bestHorizontal = true;
+        Orientation bestOrientation = Orientation.HORIZONTAL;
 
         for (int[] dim : dims) {
             int rows = dim[0], cols = dim[1];
-            boolean horizontal = rows <= cols; // matches LauncherType's horizontal convention
+            Orientation orientation = rows <= cols ? Orientation.HORIZONTAL : Orientation.VERTICAL;
             for (int r = 0; r <= size - rows; r++) {
                 for (int c = 0; c <= size - cols; c++) {
                     int score = 0;
@@ -162,7 +169,7 @@ public class SmartAI implements AIStrategy {
                     if (score > bestScore) {
                         bestScore = score;
                         bestAnchor = new Coordinate(r, c);
-                        bestHorizontal = horizontal;
+                        bestOrientation = orientation;
                     }
                 }
             }
@@ -171,6 +178,6 @@ public class SmartAI implements AIStrategy {
         int totalCells = type.getCellCount();
         // Only worth the ammo if at least half the covered cells are still unshot.
         if (bestAnchor == null || bestScore < (totalCells / 2 + 1)) return null;
-        return new AiShotPlan(type, bestAnchor, bestHorizontal);
+        return new AiShotPlan(type, bestAnchor, bestOrientation);
     }
 }

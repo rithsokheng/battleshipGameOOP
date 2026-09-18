@@ -2,6 +2,7 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.model.Coordinate;
+import com.battleship.model.Orientation;
 import com.battleship.model.Player;
 import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
@@ -47,7 +48,7 @@ public class NetworkShipPlaceView {
     private Label statusLabel;
     private Button readyButton;
 
-    private boolean horizontal = true;
+    private Orientation orientation = Orientation.HORIZONTAL;
     private boolean localReady = false;
     private boolean opponentReady = false;
     private final List<int[]> ghostCells = new ArrayList<>();
@@ -65,7 +66,7 @@ public class NetworkShipPlaceView {
         title.setStyle("-fx-font-size:24px;");
 
         dockPane = new ShipDockPane(controller, player);
-        dockPane.setOrientation(horizontal);
+        dockPane.setOrientation(orientation);
         dockPane.getStyleClass().add("card-panel");
 
         boardGridPane = new BoardGridPane(controller.getSelectedTheater().getBoardSize());
@@ -156,23 +157,17 @@ public class NetworkShipPlaceView {
 
     private void handleMessage(NetMessage msg) {
         if (msg == null) return;
-        switch (msg.type) {
-            case "READY" -> {
-                opponentReady = true;
-                statusLabel.setText(localReady
-                        ? "Both fleets deployed \u2014 starting battle\u2026"
-                        : "Opponent is ready. Deploy your fleet!");
-                maybeStartAsHost();
-            }
-            case "START" -> {
-                // Only the client ever receives this (the host sets its own turn locally
-                // in maybeStartAsHost right before sending START).
-                netSession.setMyTurn(netSession.isHost()
-                        ? "HOST".equals(msg.firstPlayer)
-                        : "CLIENT".equals(msg.firstPlayer));
-                goToBattle();
-            }
-            default -> { /* ignore */ }
+        if (msg instanceof NetMessage.Ready) {
+            opponentReady = true;
+            statusLabel.setText(localReady
+                    ? "Both fleets deployed \u2014 starting battle\u2026"
+                    : "Opponent is ready. Deploy your fleet!");
+            maybeStartAsHost();
+        } else if (msg instanceof NetMessage.Start start) {
+            // Only the client ever receives this (the host sets its own turn locally
+            // in maybeStartAsHost right before sending START).
+            netSession.beginMatch("HOST".equals(start.firstPlayer()));
+            goToBattle();
         }
     }
 
@@ -191,17 +186,15 @@ public class NetworkShipPlaceView {
         localReady = true;
         readyButton.setDisable(true);
         statusLabel.setText(opponentReady ? "Both fleets deployed \u2014 starting battle\u2026" : "Waiting for opponent to finish deploying\u2026");
-        netSession.getSession().send(NetMessage.of("READY"));
+        netSession.getSession().send(new NetMessage.Ready());
         maybeStartAsHost();
     }
 
     private void maybeStartAsHost() {
         if (netSession.isHost() && localReady && opponentReady) {
             boolean hostFirst = RANDOM.nextBoolean();
-            netSession.setMyTurn(hostFirst);
-            NetMessage start = NetMessage.of("START");
-            start.firstPlayer = hostFirst ? "HOST" : "CLIENT";
-            netSession.getSession().send(start);
+            netSession.beginMatch(hostFirst);
+            netSession.getSession().send(new NetMessage.Start(hostFirst ? "HOST" : "CLIENT"));
             goToBattle();
         }
     }
@@ -225,13 +218,13 @@ public class NetworkShipPlaceView {
     }
 
     private void toggleOrientation() {
-        horizontal = !horizontal;
+        orientation = orientation.toggle();
         updateOrientationLabel();
-        dockPane.setOrientation(horizontal);
+        dockPane.setOrientation(orientation);
     }
 
     private void updateOrientationLabel() {
-        orientationLabel.setText("Current orientation: " + (horizontal ? "HORIZONTAL" : "VERTICAL"));
+        orientationLabel.setText("Current orientation: " + (orientation.isHorizontal() ? "HORIZONTAL" : "VERTICAL"));
     }
 
     private void setupDragTargets() {
@@ -269,7 +262,7 @@ public class NetworkShipPlaceView {
                     if (!event.getDragboard().hasString()) { event.setDropCompleted(false); event.consume(); return; }
                     ShipType type = ShipType.valueOf(event.getDragboard().getString());
                     clearGhost();
-                    boolean placed = controller.placeShip(player, type, new Coordinate(row, col), horizontal);
+                    boolean placed = controller.placeShip(player, type, new Coordinate(row, col), orientation);
                     if (placed) {
                         refreshAll();
                     } else {
@@ -284,11 +277,11 @@ public class NetworkShipPlaceView {
 
     private void showGhost(int row, int col, ShipType type) {
         clearGhost();
-        boolean valid = controller.canPlace(player, type, new Coordinate(row, col), horizontal);
+        boolean valid = controller.canPlace(player, type, new Coordinate(row, col), orientation);
         String color = valid ? "-fx-background-color: rgba(232,213,163,0.4);" : "-fx-background-color: rgba(200,58,58,0.5);";
         for (int i = 0; i < type.getSize(); i++) {
-            int gr = horizontal ? row : row + i;
-            int gc = horizontal ? col + i : col;
+            int gr = orientation.isHorizontal() ? row : row + i;
+            int gc = orientation.isHorizontal() ? col + i : col;
             if (gr < 0 || gr >= boardGridPane.getSize() || gc < 0 || gc >= boardGridPane.getSize()) continue;
             boardGridPane.getCell(gr, gc).setStyle(BoardGridPane.BASE_STYLE + color);
             ghostCells.add(new int[]{gr, gc});

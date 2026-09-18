@@ -1,22 +1,32 @@
 package com.battleship.controller;
 
-import com.battleship.ai.AiShotPlan;
 import com.battleship.ai.AIFactory;
-import com.battleship.ai.AIStrategy;
-import com.battleship.model.*;
+import com.battleship.model.Board;
+import com.battleship.model.Coordinate;
+import com.battleship.model.GameMode;
+import com.battleship.model.GameState;
+import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
+import com.battleship.model.Player;
+import com.battleship.model.Ship;
+import com.battleship.model.ShipType;
+import com.battleship.model.Theater;
 
-import java.security.SecureRandom;
-import java.util.*;
+import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Application-service layer: orchestrates the full game flow
+ * Application-service layer: orchestrates the game flow
  * (menu -> mode select -> board select -> ship placement -> battle -> game over)
  * and mediates between View and Model via callbacks.
+ *
+ * It is deliberately a thin mediator (SRP): all placement logic lives in
+ * {@link PlacementService}, all turn/firing logic in {@link BattleService}.
  */
 public class GameController {
 
-    private static final SecureRandom RANDOM = new SecureRandom();
+    private final PlacementService placementService = new PlacementService();
+    private final BattleService battleService = new BattleService();
 
     private GameMode selectedMode;
     private Theater selectedTheater;
@@ -24,9 +34,7 @@ public class GameController {
 
     private Player player1;
     private Player player2;
-    private int currentPlayerIndex; // whose turn it is in BATTLE
     private int placingPlayerIndex; // whose turn it is in SHIP_PLACEMENT (hotseat only)
-    private AIStrategy aiStrategy;
 
     private Consumer<GameState> onStateChanged;
     private Consumer<Player> onGameOver;
@@ -51,15 +59,15 @@ public class GameController {
         player1 = new Player("Admiral (You)", true, new Board(size));
         player2 = new Player(hotseat ? "Admiral 2" : "Enemy AI", hotseat, new Board(size));
 
-        aiStrategy = hotseat ? null : AIFactory.create(selectedMode);
-        currentPlayerIndex = 0;
-        placingPlayerIndex = 0;
-
         player1.initLauncherAmmo(size);
         player2.initLauncherAmmo(size);
+
+        battleService.init(player1, player2, hotseat ? null : AIFactory.create(selectedMode));
+        placingPlayerIndex = 0;
     }
 
-    // ---------- Flow: Ship placement ----------
+
+    // ---------- Flow: Ship placement (delegates to PlacementService) ----------
 
     public Player getPlacingPlayer() {
         return placingPlayerIndex == 0 ? player1 : player2;
@@ -67,53 +75,33 @@ public class GameController {
 
     /** Ship types still needed for the placing player, keyed by type, with remaining count. */
     public Map<ShipType, Integer> getRemainingShipCounts(Player player) {
-        Map<ShipType, Integer> remaining = new LinkedHashMap<>(selectedTheater.getFleetComposition());
-        for (Ship s : player.getOwnBoard().getShips()) {
-            remaining.merge(s.getType(), -1, Integer::sum);
-        }
-        remaining.values().removeIf(v -> v <= 0);
-        remaining.entrySet().removeIf(e -> e.getValue() <= 0);
-        return remaining;
+        return placementService.getRemainingShipCounts(player, selectedTheater);
     }
 
-    public boolean placeShip(Player player, ShipType type, Coordinate start, boolean horizontal) {
-        Map<ShipType, Integer> remaining = getRemainingShipCounts(player);
-        if (!remaining.containsKey(type) || remaining.get(type) <= 0) return false;
-        return player.getOwnBoard().placeShip(type, start, horizontal);
+    public boolean placeShip(Player player, ShipType type, Coordinate start, Orientation orientation) {
+        return placementService.placeShip(player, selectedTheater, type, start, orientation);
     }
 
-    public boolean canPlace(Player player, ShipType type, Coordinate start, boolean horizontal) {
-        return player.getOwnBoard().isValidPlacement(type, start, horizontal);
+    public boolean canPlace(Player player, ShipType type, Coordinate start, Orientation orientation) {
+        return placementService.canPlace(player, type, start, orientation);
     }
 
     /** Pulls an already-placed ship back off the board and into the dock ("put out"). */
     public boolean removeShip(Player player, Ship ship) {
-        return player.getOwnBoard().removeShip(ship);
+        return placementService.removeShip(player, ship);
     }
 
     public boolean isPlacementComplete(Player player) {
-        return player.getOwnBoard().getShips().size() == selectedTheater.getTotalShipCount();
+        return placementService.isPlacementComplete(player, selectedTheater);
     }
 
     public void resetPlacement(Player player) {
-        player.getOwnBoard().clearShips();
+        placementService.resetPlacement(player);
     }
 
     /** Randomly places all remaining ships for the player (spec 4.2, retry until success). */
     public void autoPlaceRemaining(Player player) {
-        Map<ShipType, Integer> remaining = getRemainingShipCounts(player);
-        int size = selectedTheater.getBoardSize();
-        for (Map.Entry<ShipType, Integer> entry : remaining.entrySet()) {
-            for (int i = 0; i < entry.getValue(); i++) {
-                boolean placed = false;
-                for (int attempt = 0; attempt < 10_000 && !placed; attempt++) {
-                    int row = RANDOM.nextInt(size);
-                    int col = RANDOM.nextInt(size);
-                    boolean horizontal = RANDOM.nextBoolean();
-                    placed = player.getOwnBoard().placeShip(entry.getKey(), new Coordinate(row, col), horizontal);
-                }
-            }
-        }
+        placementService.autoPlaceAll(player, selectedTheater);
     }
 
     /** Called when the placing player hits READY. Advances placement or starts battle. */
@@ -122,10 +110,8 @@ public class GameController {
             if (placingPlayerIndex == 0) {
                 placingPlayerIndex = 1;
                 changeState(GameState.PASS_SCREEN);
-                return;
             } else {
                 startBattle();
-                return;
             }
         } else {
             // vs AI: auto-place the AI's fleet, then start battle.
@@ -140,90 +126,59 @@ public class GameController {
     }
 
     private void startBattle() {
-        rollInitiative();
+        battleService.rollInitiative();
         changeState(GameState.BATTLE);
     }
 
-    // ---------- Flow: Battle ----------
+    // ---------- Flow: Battle (delegates to BattleService) ----------
 
-    /** Cryptographically fair coin flip determines who fires first. */
-    public Player rollInitiative() {
-        currentPlayerIndex = RANDOM.nextBoolean() ? 0 : 1;
-        return getCurrentPlayer();
+    public Player rollInitiative() { return battleService.rollInitiative(); }
+    public Player getCurrentPlayer() { return battleService.getCurrentPlayer(); }
+    public Player getOpponent() { return battleService.getOpponent(); }
+
+    public boolean isAiTurn() {
+        return selectedMode != GameMode.HOTSEAT && battleService.isAiTurn();
     }
 
-    public Player getCurrentPlayer() { return currentPlayerIndex == 0 ? player1 : player2; }
-    public Player getOpponent() { return currentPlayerIndex == 0 ? player2 : player1; }
-    public boolean isAiTurn() { return selectedMode != GameMode.HOTSEAT && getCurrentPlayer() == player2; }
-
-    // ---------- Launcher system ----------
-
-    /** Attempts to select a launcher for the given player; fails silently (returns false) if unavailable/out of ammo. */
-    public boolean setSelectedLauncher(Player player, LauncherType type) {
-        int size = selectedTheater.getBoardSize();
-        if (!type.isAvailableFor(size)) return false;
-        if (!player.getAmmo().hasAmmo(type)) return false;
-        player.setSelectedLauncher(type);
-        return true;
+    public boolean selectLauncher(Player player, LauncherType type) {
+        return battleService.selectLauncher(player, type, selectedTheater.getBoardSize());
     }
 
     public void toggleLauncherOrientation(Player player) {
-        player.setLauncherHorizontal(!player.isLauncherHorizontal());
+        battleService.toggleOrientation(player);
     }
 
     public int getAmmoRemaining(Player player, LauncherType type) {
-        return player.getAmmo().getAmmo(type);
+        return battleService.getAmmoRemaining(player, type);
     }
 
     /**
      * Fires the current player's selected launcher, anchored at the given cell.
-     * Already-shot and out-of-bounds cells within the pattern are skipped, but
-     * ammo is still consumed once for the whole shot. Advances the turn afterward.
+     * Delegates to the BattleService; reacts to game-over if the shot ended the match.
      */
     public LauncherFireResult fireLauncher(Coordinate anchor) {
-        Player attacker = getCurrentPlayer();
-        Player defender = getOpponent();
-        LauncherType type = attacker.getSelectedLauncher();
-        int size = defender.getOwnBoard().getSize();
-
-        List<Coordinate> cells = type.getTargetCells(anchor, attacker.isLauncherHorizontal());
-        List<ShotResult> results = new ArrayList<>();
-        LinkedHashSet<Ship> sunk = new LinkedHashSet<>();
-
-        for (Coordinate c : cells) {
-            if (!c.isWithinBounds(size)) continue;
-            CellStatus existing = defender.getOwnBoard().getCellStatus(c);
-            if (existing == CellStatus.HIT || existing == CellStatus.MISS || existing == CellStatus.SUNK) continue;
-            ShotResult r = defender.getOwnBoard().receiveShot(c);
-            results.add(r);
-            if (r.outcome() == CellStatus.SUNK) sunk.add(r.shipSunk());
-        }
-
-        attacker.getAmmo().consume(type);
-        attacker.setSelectedLauncher(LauncherType.DEFAULT); // must actively re-select each turn (rule 1)
-
-        if (aiStrategy != null && attacker == player2) {
-            for (ShotResult r : results) aiStrategy.notifyResult(r);
-        }
-
-        LauncherFireResult fireResult = new LauncherFireResult(results, new ArrayList<>(sunk));
-
-        if (defender.hasLost()) {
-            changeState(GameState.GAME_OVER);
-            if (onGameOver != null) onGameOver.accept(attacker);
-        } else {
-            currentPlayerIndex = 1 - currentPlayerIndex;
-        }
+        LauncherFireResult fireResult = battleService.fire(anchor);
+        reactToBattleEnd();
         return fireResult;
     }
 
     /** Has the AI choose a weapon + target, applies the selection, and fires it. */
     public LauncherFireResult fireAiLauncher() {
-        AiShotPlan plan = aiStrategy.chooseShotPlan(
-                player1.getOwnBoard(), player2.getAmmo());
-        player2.setSelectedLauncher(plan.type());
-        player2.setLauncherHorizontal(plan.horizontal());
-        return fireLauncher(plan.anchor());
+        LauncherFireResult fireResult = battleService.fireAiLauncher();
+        reactToBattleEnd();
+        return fireResult;
+    }
+
+    /**
+     * Single place that recognises a finished match, for both human and AI shots.
+     * On a decisive shot the BattleService keeps the turn with the winner, so
+     * {@link BattleService#getCurrentPlayer()} is the winning player.
+     */
+    private void reactToBattleEnd() {
+        if (battleService.isBattleOver()) {
+            changeState(GameState.GAME_OVER);
+            if (onGameOver != null) onGameOver.accept(battleService.getCurrentPlayer());
+        }
     }
 
     // ---------- State plumbing ----------

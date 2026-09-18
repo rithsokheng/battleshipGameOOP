@@ -1,6 +1,5 @@
 package com.battleship.net;
 
-import com.google.gson.Gson;
 import javafx.application.Platform;
 
 import java.io.BufferedReader;
@@ -22,7 +21,7 @@ import java.util.function.Consumer;
  */
 public class NetworkSession {
 
-    private final Gson gson = new Gson();
+    private final NetMessageCodec codec = new NetMessageCodec();
     private Socket socket;
     private ServerSocket serverSocket;
     private BufferedReader in;
@@ -81,7 +80,7 @@ public class NetworkSession {
         try {
             String line;
             while (running && (line = in.readLine()) != null) {
-                NetMessage msg = gson.fromJson(line, NetMessage.class);
+                NetMessage msg = codec.decode(line);
                 if (onMessage != null) {
                     Platform.runLater(() -> onMessage.accept(msg));
                 }
@@ -95,7 +94,7 @@ public class NetworkSession {
     }
 
     public void send(NetMessage msg) {
-        if (out != null) out.println(gson.toJson(msg));
+        if (out != null) out.println(codec.encode(msg));
     }
 
     public void setOnMessage(Consumer<NetMessage> onMessage) { this.onMessage = onMessage; }

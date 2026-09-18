@@ -1,6 +1,7 @@
 package com.battleship.view;
 
 import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
 import com.battleship.model.ShipType;
 import javafx.scene.image.Image;
 
@@ -35,7 +36,7 @@ public final class ImageResources {
      * Hull art for a ship type/orientation. PATROL_BOAT has no bespoke art
      * (it's a 2-length ship, like DESTROYER) so it borrows the destroyer sprite.
      */
-    public static Image ship(ShipType type, boolean horizontal) {
+    public static Image ship(ShipType type, Orientation orientation) {
         String name = switch (type) {
             case PATROL_BOAT, DESTROYER -> "destroyer";
             case SUBMARINE -> "submarine";
@@ -43,7 +44,8 @@ public final class ImageResources {
             case BATTLESHIP -> "battleship";
             case CARRIER -> "carrier";
         };
-        return load("/images/ships/" + name + "-" + (horizontal ? "h" : "v") + ".png");
+        return load("/images/ships/" + name + "-"
+                + (orientation.isHorizontal() ? "h" : "v") + ".png");
     }
 
     public static Image launcherIcon(LauncherType type) {

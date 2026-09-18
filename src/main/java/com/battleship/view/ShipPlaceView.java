@@ -2,6 +2,7 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.model.Coordinate;
+import com.battleship.model.Orientation;
 import com.battleship.model.Player;
 import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
@@ -18,7 +19,6 @@ import javafx.scene.control.Label;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
@@ -46,7 +46,7 @@ public class ShipPlaceView {
     private Label countLabel;
     private Button readyButton;
 
-    private boolean horizontal = true;
+    private Orientation orientation = Orientation.HORIZONTAL;
     private final List<int[]> ghostCells = new ArrayList<>();
 
     public ShipPlaceView(MainApp app, GameController controller) {
@@ -65,7 +65,7 @@ public class ShipPlaceView {
         subtitle.getStyleClass().add("app-subtitle");
 
         dockPane = new ShipDockPane(controller, player);
-        dockPane.setOrientation(horizontal);
+        dockPane.setOrientation(orientation);
         dockPane.getStyleClass().add("side-card");
         dockPane.setPrefWidth(190);
 
@@ -207,13 +207,13 @@ public class ShipPlaceView {
     }
 
     private void toggleOrientation() {
-        horizontal = !horizontal;
+        orientation = orientation.toggle();
         updateOrientationLabel();
-        dockPane.setOrientation(horizontal);
+        dockPane.setOrientation(orientation);
     }
 
     private void updateOrientationLabel() {
-        orientationLabel.setText("Current orientation: " + (horizontal ? "HORIZONTAL" : "VERTICAL"));
+        orientationLabel.setText("Current orientation: " + (orientation.isHorizontal() ? "HORIZONTAL" : "VERTICAL"));
     }
 
     private void showRotateHint(StackPane root) {
@@ -269,7 +269,7 @@ public class ShipPlaceView {
                     if (!event.getDragboard().hasString()) { event.setDropCompleted(false); event.consume(); return; }
                     ShipType type = ShipType.valueOf(event.getDragboard().getString());
                     clearGhost();
-                    boolean placed = controller.placeShip(player, type, new Coordinate(row, col), horizontal);
+                    boolean placed = controller.placeShip(player, type, new Coordinate(row, col), orientation);
                     if (placed) {
                         SoundManager.getInstance().playPlaceShip();
                         refreshAll();
@@ -285,11 +285,11 @@ public class ShipPlaceView {
 
     private void showGhost(int row, int col, ShipType type) {
         clearGhost();
-        boolean valid = controller.canPlace(player, type, new Coordinate(row, col), horizontal);
+        boolean valid = controller.canPlace(player, type, new Coordinate(row, col), orientation);
         String color = valid ? "-fx-background-color: rgba(232,213,163,0.4);" : "-fx-background-color: rgba(200,58,58,0.5);";
         for (int i = 0; i < type.getSize(); i++) {
-            int gr = horizontal ? row : row + i;
-            int gc = horizontal ? col + i : col;
+            int gr = orientation.isHorizontal() ? row : row + i;
+            int gc = orientation.isHorizontal() ? col + i : col;
             if (gr < 0 || gr >= boardGridPane.getSize() || gc < 0 || gc >= boardGridPane.getSize()) continue;
             boardGridPane.getCell(gr, gc).setStyle(BoardGridPane.BASE_STYLE + color);
             ghostCells.add(new int[]{gr, gc});

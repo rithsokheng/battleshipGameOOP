@@ -1,18 +1,17 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
+import com.battleship.model.Orientation;
 import com.battleship.model.Player;
 import com.battleship.model.ShipType;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.Dragboard;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -32,7 +31,7 @@ public class ShipDockPane extends VBox {
 
     private final GameController controller;
     private final Player player;
-    private boolean horizontal = true;
+    private Orientation orientation = Orientation.HORIZONTAL;
 
     public ShipDockPane(GameController controller, Player player) {
         this.controller = controller;
@@ -43,8 +42,8 @@ public class ShipDockPane extends VBox {
         refresh();
     }
 
-    public void setOrientation(boolean horizontal) {
-        this.horizontal = horizontal;
+    public void setOrientation(Orientation orientation) {
+        this.orientation = orientation;
         refresh();
     }
 
@@ -64,10 +63,10 @@ public class ShipDockPane extends VBox {
     }
 
     private Pane buildShipNode(ShipType type) {
-        Image sprite = ImageResources.ship(type, horizontal);
+        Image sprite = ImageResources.ship(type, orientation);
         int len = type.getSize();
-        double w = horizontal ? UNIT * len + (len - 1) : UNIT;
-        double h = horizontal ? UNIT : UNIT * len + (len - 1);
+        double w = orientation.isHorizontal() ? UNIT * len + (len - 1) : UNIT;
+        double h = orientation.isHorizontal() ? UNIT : UNIT * len + (len - 1);
 
         StackPane block = new StackPane();
         block.setPrefSize(w, h);

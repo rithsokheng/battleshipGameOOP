@@ -114,18 +114,17 @@ public class HostLobbyView {
     }
 
     private void handleHandshakeMessage(NetworkSession session, NetMessage msg, Label status) {
-        if (msg == null || !"HELLO".equals(msg.type)) return;
+        if (!(msg instanceof NetMessage.Hello hello)) return;
 
-        if (!code.equals(msg.code)) {
-            session.send(NetMessage.of("REJECT"));
+        if (!code.equals(hello.code())) {
+            session.send(new NetMessage.Reject("Wrong join code"));
             session.close();
             status.setText("A connection used the wrong code. Still waiting\u2026");
             startHosting(status);
             return;
         }
 
-        NetMessage welcome = NetMessage.of("WELCOME");
-        welcome.theater = theater.name();
+        NetMessage welcome = new NetMessage.Welcome(theater.name());
         session.send(welcome);
 
         int size = theater.getBoardSize();

@@ -4,6 +4,7 @@ import com.battleship.model.AmmoInventory;
 import com.battleship.model.Board;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
 import com.battleship.model.ShotResult;
 
 /**
@@ -24,6 +25,6 @@ public interface AIStrategy {
      * never touches the special launchers.
      */
     default AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
-        return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), true);
+        return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), Orientation.HORIZONTAL);
     }
 }
