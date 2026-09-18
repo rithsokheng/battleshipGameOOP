@@ -2,16 +2,18 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.model.Player;
+import com.battleship.net.NetworkGameSession;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
 /**
- * JavaFX application entry point. Owns the primary Stage/Scene and exposes
- * navigation methods used by every screen to move to the next one.
+ * JavaFX application entry point. Owns the primary Stage/Scene and implements
+ * {@link ViewNavigator} — views receive the navigator abstraction (never this
+ * concrete Application class), so navigation can be mocked in tests.
  */
-public class MainApp extends Application {
+public class MainApp extends Application implements ViewNavigator {
 
     private Stage stage;
     private Scene scene;
@@ -71,8 +73,29 @@ public class MainApp extends Application {
         setRoot(new GameOverView(this, controller, winner).build());
     }
 
+    // ---------- Network flow (ViewNavigator contract) ----------
+
+    @Override
+    public void showNetworkShipPlacement(NetworkGameSession session) {
+        setRoot(new NetworkShipPlaceView(this, controller, session).build());
+    }
+
+    @Override
+    public void showNetworkBattle(NetworkGameSession session) {
+        setRoot(new NetworkBattleView(this, controller, session).build());
+    }
+
+    @Override
+    public void showNetworkGameOver(NetworkGameSession session, boolean won) {
+        setRoot(new NetworkGameOverView(this, session, won).build());
+    }
+
     public Stage getStage() { return stage; }
     public GameController getController() { return controller; }
+
+    /** Views play sounds through the GameAudio abstraction, never the singleton. */
+    @Override
+    public GameAudio getAudio() { return SoundManager.getInstance(); }
 
     public static void main(String[] args) {
         launch(args);

@@ -11,6 +11,7 @@ import com.battleship.model.Player;
 import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 import com.battleship.model.Theater;
+import com.battleship.model.Turn;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -34,7 +35,7 @@ public class GameController {
 
     private Player player1;
     private Player player2;
-    private int placingPlayerIndex; // whose turn it is in SHIP_PLACEMENT (hotseat only)
+    private Turn placingTurn; // whose turn it is in SHIP_PLACEMENT (hotseat only)
 
     private Consumer<GameState> onStateChanged;
     private Consumer<Player> onGameOver;
@@ -63,14 +64,14 @@ public class GameController {
         player2.initLauncherAmmo(size);
 
         battleService.init(player1, player2, hotseat ? null : AIFactory.create(selectedMode));
-        placingPlayerIndex = 0;
+        placingTurn = Turn.PLAYER_1;
     }
 
 
     // ---------- Flow: Ship placement (delegates to PlacementService) ----------
 
     public Player getPlacingPlayer() {
-        return placingPlayerIndex == 0 ? player1 : player2;
+        return placingTurn == Turn.PLAYER_1 ? player1 : player2;
     }
 
     /** Ship types still needed for the placing player, keyed by type, with remaining count. */
@@ -107,8 +108,8 @@ public class GameController {
     /** Called when the placing player hits READY. Advances placement or starts battle. */
     public void confirmReady() {
         if (selectedMode == GameMode.HOTSEAT) {
-            if (placingPlayerIndex == 0) {
-                placingPlayerIndex = 1;
+            if (placingTurn == Turn.PLAYER_1) {
+                placingTurn = Turn.PLAYER_2;
                 changeState(GameState.PASS_SCREEN);
             } else {
                 startBattle();

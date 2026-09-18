@@ -1,6 +1,8 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
+import com.battleship.controller.LauncherFireResult;
+import com.battleship.controller.ShotResolver;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
@@ -39,8 +41,8 @@ public class NetworkBattleView extends AbstractBattleView {
     private Label orientationLabel;
     private Label fleetStatusLabel;
 
-    public NetworkBattleView(MainApp app, GameController controller, NetworkGameSession netSession) {
-        super(app, controller);
+    public NetworkBattleView(ViewNavigator nav, GameController controller, NetworkGameSession netSession) {
+        super(nav, controller);
         this.netSession = netSession;
         this.me = netSession.getMe();
     }
@@ -203,24 +205,20 @@ public class NetworkBattleView extends AbstractBattleView {
         alert.setHeaderText(null);
         alert.setContentText("Your opponent disconnected.");
         alert.showAndWait();
-        app.showMainMenu();
+        nav.showMainMenu();
     }
 
     /** I am the defender: resolve the incoming shot against my real board and reply. */
     private void handleIncomingFire(NetMessage.Fire fire) {
-        List<Coordinate> cells = fire.launcherType().getTargetCells(fire.anchor(), fire.orientation());
         var myBoard = me.getOwnBoard();
 
-        List<ShotResult> results = new ArrayList<>();
-        var sunk = new java.util.LinkedHashSet<Ship>();
-        for (Coordinate c : cells) {
-            if (!c.isWithinBounds(myBoard.getSize())) continue;
-            CellStatus existing = myBoard.getCellStatus(c);
-            if (existing == CellStatus.HIT || existing == CellStatus.MISS || existing == CellStatus.SUNK) continue;
-            ShotResult r = myBoard.receiveShot(c);
-            results.add(r);
-            if (r.outcome() == CellStatus.SUNK) sunk.add(r.shipSunk());
-        }
+        // Delegated to the shared controller-layer resolver (V8): the exact
+        // same fire rules as the local BattleService, with no duplicated
+        // resolution logic in the view.
+        LauncherFireResult resolution = ShotResolver.resolve(
+                myBoard, fire.launcherType(), fire.anchor(), fire.orientation());
+        List<ShotResult> results = resolution.results();
+        List<Ship> sunk = resolution.sunkShips();
 
         for (ShotResult r : results) {
             if (r.outcome() != CellStatus.SUNK) ownGrid.renderShot(r.coordinate(), r.outcome());
@@ -249,15 +247,15 @@ public class NetworkBattleView extends AbstractBattleView {
         boolean anyHit = results.stream().anyMatch(ShotResult::isHit);
         boolean anySunk = !sunk.isEmpty();
         if (anySunk) {
-            SoundManager.getInstance().playSunk();
+            audio.playSunk();
         } else if (anyHit) {
-            SoundManager.getInstance().playHit();
+            audio.playHit();
         } else {
-            SoundManager.getInstance().playMiss();
+            audio.playMiss();
         }
         logLabel.setText(anyHit ? "Incoming fire — you took damage!" : "Incoming fire — they missed.");
         netSession.beginMyTurn();
-        SoundManager.getInstance().playTurnStart();
+        audio.playTurnStart();
         turnLabel.setText("YOUR TURN");
         enemyGrid.setDisable(false);
     }
@@ -291,11 +289,11 @@ public class NetworkBattleView extends AbstractBattleView {
             log.append(anyHit ? "Direct hit!" : "Nothing but spray — miss.");
         }
         if (anyHit && (result.sunkShips() == null || result.sunkShips().isEmpty())) {
-            SoundManager.getInstance().playHit();
+            audio.playHit();
         } else if (result.sunkShips() != null && !result.sunkShips().isEmpty()) {
-            SoundManager.getInstance().playSunk();
+            audio.playSunk();
         } else {
-            SoundManager.getInstance().playMiss();
+            audio.playMiss();
         }
         logLabel.setText(log.toString().trim());
         refreshFleetStatus();
@@ -310,7 +308,7 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     private void goToGameOver(boolean won) {
-        app.setScreen(new NetworkGameOverView(app, netSession, won).build());
+        nav.showNetworkGameOver(netSession, won);
     }
 
     // ---------- Shot resolution (network) ----------
@@ -319,17 +317,18 @@ public class NetworkBattleView extends AbstractBattleView {
     protected void resolveShot(Coordinate anchor) {
         LauncherType type = me.getSelectedLauncher();
 
-        if (type == LauncherType.LEVEL_2) me.getAmmo().consume(LauncherType.LEVEL_2);
-        if (type == LauncherType.NUCLEAR) {
-            me.getAmmo().consume(LauncherType.NUCLEAR);
-            if (!me.getAmmo().hasAmmo(LauncherType.NUCLEAR)) {
-                NuclearResupplyDialog.show(app.getStage(), () -> {
-                    me.getAmmo().resupply(LauncherType.NUCLEAR, 1);
-                    refreshLauncherBar();
-                });
-            }
-        }
+        // V9: the view no longer does ammo bookkeeping on the raw inventory —
+        // it simply tells the domain object the shot happened; the Player owns
+        // its ammo (consume is a no-op for the infinite DEFAULT launcher).
+        me.consumeAmmo(type);
         me.resetLauncherAfterShot();
+
+        if (type == LauncherType.NUCLEAR && !me.hasAmmo(LauncherType.NUCLEAR)) {
+            NuclearResupplyDialog.show(nav.getStage(), () -> {
+                me.resupplyAmmo(LauncherType.NUCLEAR, 1);
+                refreshLauncherBar();
+            });
+        }
 
         netSession.getSession().send(new NetMessage.Fire(type, anchor, firingOrientation()));
 

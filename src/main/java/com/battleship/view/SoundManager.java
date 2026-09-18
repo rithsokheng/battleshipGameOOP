@@ -12,7 +12,7 @@ import java.util.Map;
  * <p>Every public method is completely crash-safe: if anything goes wrong
  * during init or playback, the game keeps running silently.</p>
  */
-public final class SoundManager {
+public final class SoundManager implements GameAudio {
 
     private static volatile SoundManager instance;
 

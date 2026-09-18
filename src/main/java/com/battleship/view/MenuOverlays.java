@@ -25,7 +25,7 @@ final class MenuOverlays {
     // HOW TO PLAY
     // ---------------------------------------------------------------
 
-    static StackPane howToPlay(Runnable onClose) {
+    static StackPane howToPlay(GameAudio audio, Runnable onClose) {
         Label title = new Label("HOW TO PLAY: TACTICAL MANUAL");
         title.setFont(Font.font("Arial Black", FontWeight.BOLD, 22));
         title.getStyleClass().add("overlay-title");
@@ -46,7 +46,7 @@ final class MenuOverlays {
         close.getStyleClass().add("primary-button");
         close.setPrefWidth(160);
         close.setPrefHeight(42);
-        close.setOnAction(e -> { SoundManager.getInstance().playClick(); onClose.run(); });
+        close.setOnAction(e -> { audio.playClick(); onClose.run(); });
 
         VBox content = new VBox(22, title, divider(), grid, close);
         content.setAlignment(Pos.CENTER);
@@ -71,25 +71,25 @@ final class MenuOverlays {
     // OPTIONS
     // ---------------------------------------------------------------
 
-    static StackPane options(Runnable onClose) {
+    static StackPane options(GameAudio audio, Runnable onClose) {
         Label title = new Label("SETTINGS: OPERATIONAL CONTROLS");
         title.setFont(Font.font("Arial Black", FontWeight.BOLD, 22));
         title.getStyleClass().add("overlay-title");
 
         // --- Audio & Communications ---
         Label audioHeading = sectionHeading("1. AUDIO & COMMUNICATIONS");
-        Slider master = themedSlider(SoundManager.getInstance().getMasterVolume() * 100);
-        Slider sfx = themedSlider(SoundManager.getInstance().getSfxVolume() * 100);
+        Slider master = themedSlider(audio.getMasterVolume() * 100);
+        Slider sfx = themedSlider(audio.getSfxVolume() * 100);
         ToggleButton muteAll = new ToggleButton("MUTE ALL");
         muteAll.getStyleClass().add("switch-toggle");
-        muteAll.setSelected(SoundManager.getInstance().isMuted());
+        muteAll.setSelected(audio.isMuted());
 
         master.valueProperty().addListener((obs, old, val) ->
-                SoundManager.getInstance().setMasterVolume(val.doubleValue() / 100));
+                audio.setMasterVolume(val.doubleValue() / 100));
         sfx.valueProperty().addListener((obs, old, val) ->
-                SoundManager.getInstance().setSfxVolume(val.doubleValue() / 100));
+                audio.setSfxVolume(val.doubleValue() / 100));
         muteAll.setOnAction(e ->
-                SoundManager.getInstance().setMuted(muteAll.isSelected()));
+                audio.setMuted(muteAll.isSelected()));
 
         GridPane audioGrid = new GridPane();
         audioGrid.setHgap(16);
@@ -128,13 +128,13 @@ final class MenuOverlays {
         save.getStyleClass().addAll("primary-button", "featured-button");
         save.setPrefWidth(180);
         save.setPrefHeight(42);
-        save.setOnAction(e -> { SoundManager.getInstance().playClick(); onClose.run(); });
+        save.setOnAction(e -> { audio.playClick(); onClose.run(); });
 
         Button close = new Button("CLOSE");
         close.getStyleClass().add("ghost-button");
         close.setPrefWidth(140);
         close.setPrefHeight(42);
-        close.setOnAction(e -> { SoundManager.getInstance().playClick(); onClose.run(); });
+        close.setOnAction(e -> { audio.playClick(); onClose.run(); });
 
         HBox buttons = new HBox(16, save, close);
         buttons.setAlignment(Pos.CENTER);

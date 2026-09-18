@@ -26,11 +26,11 @@ import javafx.util.Duration;
  */
 public class BoardSelectView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
 
-    public BoardSelectView(MainApp app, GameController controller) {
-        this.app = app;
+    public BoardSelectView(ViewNavigator nav, GameController controller) {
+        this.nav = nav;
         this.controller = controller;
     }
 
@@ -54,7 +54,7 @@ public class BoardSelectView {
         back.setPrefWidth(140);
         back.setPrefHeight(42);
         back.setFont(Font.font("Arial", FontWeight.BOLD, 13));
-        back.setOnAction(e -> { SoundManager.getInstance().playClick(); app.showModeSelect(); });
+        back.setOnAction(e -> { nav.getAudio().playClick(); nav.showModeSelect(); });
 
         VBox layout = new VBox(16, title, subtitle, cards, back);
         layout.setAlignment(Pos.CENTER);
@@ -128,9 +128,9 @@ public class BoardSelectView {
         select.setOnMouseEntered(e -> { select.setScaleX(1.04); select.setScaleY(1.04); });
         select.setOnMouseExited(e -> { select.setScaleX(1.0); select.setScaleY(1.0); });
         select.setOnAction(e -> {
-            SoundManager.getInstance().playClick();
+            nav.getAudio().playClick();
             controller.setTheater(theater);
-            app.showShipPlacement();
+            nav.showShipPlacement();
         });
 
         VBox top = new VBox(6, name, sizeBadge);

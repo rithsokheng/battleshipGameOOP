@@ -1,11 +1,11 @@
 package com.battleship.ai;
 
-import com.battleship.model.AmmoInventory;
 import com.battleship.model.Board;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
+import com.battleship.model.Player;
 import com.battleship.model.ShotResult;
 
 import java.security.SecureRandom;
@@ -57,9 +57,10 @@ public class HuntTargetAI implements AIStrategy {
      * to cover 3 cells at once instead of 1.
      */
     @Override
-    public AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
+    public AiShotPlan chooseShotPlan(Board enemyBoard, Player firingPlayer) {
         boolean hunting = !targetQueue.hasTargets();
-        if (hunting && ammo.hasAmmo(LauncherType.LEVEL_2) && !ammo.isInfinite(LauncherType.LEVEL_2)
+        if (hunting && firingPlayer.hasAmmo(LauncherType.LEVEL_2)
+                && !firingPlayer.isAmmoInfinite(LauncherType.LEVEL_2)
                 && random.nextInt(4) == 0) {
             List<Coordinate> unshot = enemyBoard.getUnshotCells();
             List<Coordinate> parity = new ArrayList<>();
@@ -70,11 +71,6 @@ public class HuntTargetAI implements AIStrategy {
             Coordinate anchor = pool.get(random.nextInt(pool.size()));
             return new AiShotPlan(LauncherType.LEVEL_2, anchor, Orientation.random(random));
         }
-        return AIStrategy.super.chooseShotPlan(enemyBoard, ammo);
-    }
-
-    /** Expose targeting queue state for SmartAI composition. */
-    protected boolean isTargeting() {
-        return targetQueue.hasTargets();
+        return AIStrategy.super.chooseShotPlan(enemyBoard, firingPlayer);
     }
 }

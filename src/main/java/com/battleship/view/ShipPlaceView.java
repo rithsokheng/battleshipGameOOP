@@ -36,7 +36,7 @@ import java.util.List;
  */
 public class ShipPlaceView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
     private final Player player;
 
@@ -49,8 +49,8 @@ public class ShipPlaceView {
     private Orientation orientation = Orientation.HORIZONTAL;
     private final List<int[]> ghostCells = new ArrayList<>();
 
-    public ShipPlaceView(MainApp app, GameController controller) {
-        this.app = app;
+    public ShipPlaceView(ViewNavigator nav, GameController controller) {
+        this.nav = nav;
         this.controller = controller;
         this.player = controller.getPlacingPlayer();
     }
@@ -94,7 +94,7 @@ public class ShipPlaceView {
         readyButton.setPrefHeight(46);
         readyButton.getStyleClass().add("primary-button");
         readyButton.setOnAction(e -> {
-            SoundManager.getInstance().playClick();
+            nav.getAudio().playClick();
             controller.confirmReady();
             routeAfterReady();
         });
@@ -110,14 +110,14 @@ public class ShipPlaceView {
         Button rotate = new Button("\u21bb  ROTATE SHIP");
         rotate.getStyleClass().add("ghost-button");
         rotate.setPrefHeight(40);
-        rotate.setOnAction(e -> { SoundManager.getInstance().playClick(); toggleOrientation(); });
+        rotate.setOnAction(e -> { nav.getAudio().playClick(); toggleOrientation(); });
 
         Button autoPlace = new Button("AUTO PLACE");
         autoPlace.getStyleClass().add("ghost-button");
         autoPlace.setPrefHeight(40);
         autoPlace.setOnAction(e -> {
-            SoundManager.getInstance().playClick();
-            SoundManager.getInstance().playPlaceShip();
+            nav.getAudio().playClick();
+            nav.getAudio().playPlaceShip();
             controller.autoPlaceRemaining(player);
             refreshAll();
         });
@@ -125,7 +125,7 @@ public class ShipPlaceView {
         reset.getStyleClass().add("ghost-button");
         reset.setPrefHeight(40);
         reset.setOnAction(e -> {
-            SoundManager.getInstance().playClick();
+            nav.getAudio().playClick();
             controller.resetPlacement(player);
             refreshAll();
         });
@@ -134,7 +134,7 @@ public class ShipPlaceView {
 
         Button exit = new Button("EXIT");
         exit.getStyleClass().add("danger-button");
-        exit.setOnAction(e -> { SoundManager.getInstance().playClick(); confirmExit(); });
+        exit.setOnAction(e -> { nav.getAudio().playClick(); confirmExit(); });
 
         VBox titleBlock = new VBox(6, title, subtitle);
         titleBlock.setAlignment(Pos.CENTER);
@@ -200,9 +200,9 @@ public class ShipPlaceView {
         alert.setContentText("Leave this game and return to the main menu? Your fleet deployment will be lost.");
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
-            SoundManager.getInstance().stopBgm();
-            SoundManager.getInstance().playMenuMusic();
-            app.showMainMenu();
+            nav.getAudio().stopBgm();
+            nav.getAudio().playMenuMusic();
+            nav.showMainMenu();
         }
     }
 
@@ -259,7 +259,7 @@ public class ShipPlaceView {
                     if (event.getButton() != MouseButton.PRIMARY) return;
                     Ship ship = player.getOwnBoard().getShipAt(new Coordinate(row, col));
                     if (ship != null) {
-                        SoundManager.getInstance().playRemoveShip();
+                        nav.getAudio().playRemoveShip();
                         controller.removeShip(player, ship);
                         refreshAll();
                     }
@@ -271,7 +271,7 @@ public class ShipPlaceView {
                     clearGhost();
                     boolean placed = controller.placeShip(player, type, new Coordinate(row, col), orientation);
                     if (placed) {
-                        SoundManager.getInstance().playPlaceShip();
+                        nav.getAudio().playPlaceShip();
                         refreshAll();
                     } else {
                         shakeCell(cell);
@@ -329,12 +329,12 @@ public class ShipPlaceView {
 
     private void routeAfterReady() {
         switch (controller.getState()) {
-            case PASS_SCREEN -> app.showPassScreen(() -> {
+            case PASS_SCREEN -> nav.showPassScreen(() -> {
                 controller.resumePlacementAfterPass();
-                app.showShipPlacement();
+                nav.showShipPlacement();
             });
-            case BATTLE -> app.showBattle();
-            default -> app.showShipPlacement();
+            case BATTLE -> nav.showBattle();
+            default -> nav.showShipPlacement();
         }
     }
 }

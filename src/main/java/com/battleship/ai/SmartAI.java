@@ -1,11 +1,11 @@
 package com.battleship.ai;
 
-import com.battleship.model.AmmoInventory;
 import com.battleship.model.Board;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
+import com.battleship.model.Player;
 import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 import com.battleship.model.ShotResult;
@@ -126,17 +126,19 @@ public class SmartAI implements AIStrategy {
      * the ammo and falls back to a precise single Default shot.
      */
     @Override
-    public AiShotPlan chooseShotPlan(Board enemyBoard, AmmoInventory ammo) {
+    public AiShotPlan chooseShotPlan(Board enemyBoard, Player firingPlayer) {
         if (targetQueue.hasTargets()) {
             return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), Orientation.HORIZONTAL);
         }
 
         int size = enemyBoard.getSize();
-        if (ammo.hasAmmo(LauncherType.NUCLEAR) && !ammo.isInfinite(LauncherType.NUCLEAR) && size >= 10) {
+        if (firingPlayer.hasAmmo(LauncherType.NUCLEAR)
+                && !firingPlayer.isAmmoInfinite(LauncherType.NUCLEAR) && size >= 10) {
             AiShotPlan plan = bestBlock(enemyBoard, LauncherType.NUCLEAR);
             if (plan != null) return plan;
         }
-        if (ammo.hasAmmo(LauncherType.LEVEL_2) && !ammo.isInfinite(LauncherType.LEVEL_2) && size >= 8) {
+        if (firingPlayer.hasAmmo(LauncherType.LEVEL_2)
+                && !firingPlayer.isAmmoInfinite(LauncherType.LEVEL_2) && size >= 8) {
             AiShotPlan plan = bestBlock(enemyBoard, LauncherType.LEVEL_2);
             if (plan != null) return plan;
         }

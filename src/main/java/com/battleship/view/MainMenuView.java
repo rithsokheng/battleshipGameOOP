@@ -20,10 +20,10 @@ import javafx.util.Duration;
  */
 public class MainMenuView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
 
-    public MainMenuView(MainApp app) {
-        this.app = app;
+    public MainMenuView(ViewNavigator nav) {
+        this.nav = nav;
     }
 
     private StackPane root;
@@ -47,19 +47,19 @@ public class MainMenuView {
 
         Button play = navButton("\u25B6  PLAY");
         play.getStyleClass().addAll("primary-button", "featured-button");
-        play.setOnAction(e -> { SoundManager.getInstance().playClick(); app.showModeSelect(); });
+        play.setOnAction(e -> { nav.getAudio().playClick(); nav.showModeSelect(); });
 
         Button howToPlay = navButton("\u2753  HOW TO PLAY");
         howToPlay.getStyleClass().add("ghost-button");
-        howToPlay.setOnAction(e -> { SoundManager.getInstance().playClick(); showHowToPlay(); });
+        howToPlay.setOnAction(e -> { nav.getAudio().playClick(); showHowToPlay(); });
 
         Button options = navButton("\u2699  OPTIONS");
         options.getStyleClass().add("ghost-button");
-        options.setOnAction(e -> { SoundManager.getInstance().playClick(); showOptions(); });
+        options.setOnAction(e -> { nav.getAudio().playClick(); showOptions(); });
 
         Button exit = navButton("\u2716  EXIT");
         exit.getStyleClass().add("ghost-button");
-        exit.setOnAction(e -> { SoundManager.getInstance().playClick(); app.getStage().close(); });
+        exit.setOnAction(e -> { nav.getAudio().playClick(); nav.getStage().close(); });
 
         VBox buttonBox = new VBox(14, play, howToPlay, options, exit);
         buttonBox.setAlignment(Pos.CENTER);
@@ -111,12 +111,14 @@ public class MainMenuView {
     }
 
     private void showHowToPlay() {
-        StackPane overlay = MenuOverlays.howToPlay(() -> root.getChildren().remove(root.getChildren().size() - 1));
+        StackPane overlay = MenuOverlays.howToPlay(nav.getAudio(),
+                () -> root.getChildren().remove(root.getChildren().size() - 1));
         root.getChildren().add(overlay);
     }
 
     private void showOptions() {
-        StackPane overlay = MenuOverlays.options(() -> root.getChildren().remove(root.getChildren().size() - 1));
+        StackPane overlay = MenuOverlays.options(nav.getAudio(),
+                () -> root.getChildren().remove(root.getChildren().size() - 1));
         root.getChildren().add(overlay);
     }
 }

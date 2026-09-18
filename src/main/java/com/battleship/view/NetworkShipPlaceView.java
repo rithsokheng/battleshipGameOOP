@@ -36,7 +36,7 @@ public class NetworkShipPlaceView {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
     private final NetworkGameSession netSession;
     private final Player player;
@@ -53,8 +53,8 @@ public class NetworkShipPlaceView {
     private boolean opponentReady = false;
     private final List<int[]> ghostCells = new ArrayList<>();
 
-    public NetworkShipPlaceView(MainApp app, GameController controller, NetworkGameSession netSession) {
-        this.app = app;
+    public NetworkShipPlaceView(ViewNavigator nav, GameController controller, NetworkGameSession netSession) {
+        this.nav = nav;
         this.controller = controller;
         this.netSession = netSession;
         this.player = netSession.getMe();
@@ -178,7 +178,7 @@ public class NetworkShipPlaceView {
         alert.setHeaderText(null);
         alert.setContentText("Your opponent disconnected.");
         alert.showAndWait();
-        app.showMainMenu();
+        nav.showMainMenu();
     }
 
     private void onReadyClicked() {
@@ -200,7 +200,7 @@ public class NetworkShipPlaceView {
     }
 
     private void goToBattle() {
-        app.setScreen(new NetworkBattleView(app, controller, netSession).build());
+        nav.showNetworkBattle(netSession);
     }
 
     // ---------- Placement UI (mirrors ShipPlaceView) ----------
@@ -213,7 +213,7 @@ public class NetworkShipPlaceView {
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             netSession.getSession().close();
-            app.showMainMenu();
+            nav.showMainMenu();
         }
     }
 

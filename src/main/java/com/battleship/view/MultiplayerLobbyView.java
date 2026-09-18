@@ -18,12 +18,12 @@ import javafx.scene.text.FontWeight;
  */
 public class MultiplayerLobbyView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
     private VBox contentArea;
 
-    public MultiplayerLobbyView(MainApp app, GameController controller) {
-        this.app = app;
+    public MultiplayerLobbyView(ViewNavigator nav, GameController controller) {
+        this.nav = nav;
         this.controller = controller;
     }
 
@@ -42,7 +42,7 @@ public class MultiplayerLobbyView {
         Button back = new Button("BACK");
         back.getStyleClass().add("ghost-button");
         back.setPrefWidth(120);
-        back.setOnAction(e -> app.showModeSelect());
+        back.setOnAction(e -> nav.showModeSelect());
 
         VBox layout = new VBox(20, title, subtitle, contentArea, back);
         layout.setAlignment(Pos.CENTER);
@@ -59,7 +59,7 @@ public class MultiplayerLobbyView {
         host.setOnAction(e -> showTheaterStep());
 
         Button join = navButton("JOIN A GAME");
-        join.setOnAction(e -> app.setScreen(new JoinLobbyView(app, controller).build()));
+        join.setOnAction(e -> nav.setScreen(new JoinLobbyView(nav, controller).build()));
 
         contentArea.getChildren().addAll(host, join);
     }
@@ -81,7 +81,7 @@ public class MultiplayerLobbyView {
 
     private Button theaterButton(Theater theater) {
         Button b = navButton(theater.getDisplayName() + "  (" + theater.getBoardSize() + "\u00D7" + theater.getBoardSize() + ")");
-        b.setOnAction(e -> app.setScreen(new HostLobbyView(app, controller, theater).build()));
+        b.setOnAction(e -> nav.setScreen(new HostLobbyView(nav, controller, theater).build()));
         return b;
     }
 

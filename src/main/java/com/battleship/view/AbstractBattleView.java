@@ -36,8 +36,10 @@ public abstract class AbstractBattleView {
     /** Visual state of one weapon button; styling is subclass-supplied. */
     protected enum LauncherButtonState { DISABLED, SELECTED, ENABLED }
 
-    protected final MainApp app;
+    protected final ViewNavigator nav;
     protected final GameController controller;
+    /** Audio facade injected from the navigator — never the static singleton. */
+    protected final GameAudio audio;
 
     protected BoardGridPane ownGrid;
     protected BoardGridPane enemyGrid;
@@ -45,9 +47,10 @@ public abstract class AbstractBattleView {
 
     private final List<int[]> ghostCells = new ArrayList<>();
 
-    protected AbstractBattleView(MainApp app, GameController controller) {
-        this.app = app;
+    protected AbstractBattleView(ViewNavigator nav, GameController controller) {
+        this.nav = nav;
         this.controller = controller;
+        this.audio = nav.getAudio();
     }
 
     // ================= Template method =================
@@ -70,7 +73,7 @@ public abstract class AbstractBattleView {
         root.setOnMouseClicked(e -> { if (e.getButton() == MouseButton.SECONDARY) toggleOrientation(); });
         root.requestFocus();
 
-        SoundManager.getInstance().playBattleMusic();
+        audio.playBattleMusic();
         onViewShown();
         return root;
     }
@@ -162,9 +165,9 @@ public abstract class AbstractBattleView {
         }
 
         if (type == LauncherType.NUCLEAR) {
-            SoundManager.getInstance().playNuclear();
+            audio.playNuclear();
         } else {
-            SoundManager.getInstance().playFire();
+            audio.playFire();
         }
         clearGhost();
         resolveShot(anchor);
@@ -260,9 +263,9 @@ public abstract class AbstractBattleView {
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get() == ButtonType.OK) {
             onExitConfirmed();
-            SoundManager.getInstance().stopBgm();
-            SoundManager.getInstance().playMenuMusic();
-            app.showMainMenu();
+            audio.stopBgm();
+            audio.playMenuMusic();
+            nav.showMainMenu();
         }
     }
 
@@ -270,7 +273,7 @@ public abstract class AbstractBattleView {
     protected final Button buildExitButton() {
         Button exit = new Button("EXIT");
         exit.getStyleClass().add("danger-button");
-        exit.setOnAction(e -> { SoundManager.getInstance().playClick(); confirmExit(); });
+        exit.setOnAction(e -> { audio.playClick(); confirmExit(); });
         return exit;
     }
 }

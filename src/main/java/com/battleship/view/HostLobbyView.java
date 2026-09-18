@@ -9,6 +9,7 @@ import com.battleship.net.NetMessage;
 import com.battleship.net.NetUtil;
 import com.battleship.net.NetworkGameSession;
 import com.battleship.net.NetworkSession;
+import com.battleship.net.Role;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -31,15 +32,15 @@ public class HostLobbyView {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
     private final Theater theater;
     private final String code;
     private final int port;
     private NetworkSession pendingSession;
 
-    public HostLobbyView(MainApp app, GameController controller, Theater theater) {
-        this.app = app;
+    public HostLobbyView(ViewNavigator nav, GameController controller, Theater theater) {
+        this.nav = nav;
         this.controller = controller;
         this.theater = theater;
         this.code = String.format("%04d", RANDOM.nextInt(10000));
@@ -84,7 +85,7 @@ public class HostLobbyView {
         cancel.setPrefWidth(120);
         cancel.setOnAction(e -> {
             if (pendingSession != null) pendingSession.close();
-            app.showMultiplayerLobby();
+            nav.showMultiplayerLobby();
         });
 
         VBox layout = new VBox(14, title, qrFrame, details, howTo, status, cancel);
@@ -131,8 +132,8 @@ public class HostLobbyView {
         Player me = new Player("You (Host)", true, new Board(size));
         me.initLauncherAmmo(size);
         NetworkGameSession netSession = new NetworkGameSession(
-                session, theater, true, me, new EnemyTracker(size));
+                session, theater, Role.HOST, me, new EnemyTracker(size));
 
-        app.setScreen(new NetworkShipPlaceView(app, controller, netSession).build());
+        nav.showNetworkShipPlacement(netSession);
     }
 }

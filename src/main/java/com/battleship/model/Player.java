@@ -71,7 +71,34 @@ public class Player {
     public String getName() { return name; }
     public boolean isHuman() { return isHuman; }
     public Board getOwnBoard() { return ownBoard; }
-    public AmmoInventory getAmmo() { return ammo; }
+
+    // --- Ammo access, delegated (fixes V1: getAmmo() no longer leaks the mutable AmmoInventory) ---
+
+    /** Returns the current ammo count for the given type. */
+    public int getAmmoCount(LauncherType type) {
+        return ammo != null ? ammo.getAmmo(type) : 0;
+    }
+
+    /** Returns true if the player has at least one shot of this type. */
+    public boolean hasAmmo(LauncherType type) {
+        return ammo != null && ammo.hasAmmo(type);
+    }
+
+    /** True if this ammo type is infinite (e.g., DEFAULT). */
+    public boolean isAmmoInfinite(LauncherType type) {
+        return ammo != null && ammo.isInfinite(type);
+    }
+
+    /** Consumes one unit of the given ammo type. */
+    public void consumeAmmo(LauncherType type) {
+        if (ammo != null) ammo.consume(type);
+    }
+
+    /** Adds ammo (e.g., nuclear resupply after quiz). */
+    public void resupplyAmmo(LauncherType type, int amount) {
+        if (ammo != null) ammo.resupply(type, amount);
+    }
+
     public LauncherType getSelectedLauncher() { return selectedLauncher; }
     public Orientation getLauncherOrientation() { return launcherOrientation; }
 }

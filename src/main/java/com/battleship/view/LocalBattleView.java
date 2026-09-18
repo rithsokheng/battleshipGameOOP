@@ -40,8 +40,8 @@ public class LocalBattleView extends AbstractBattleView {
     private VBox shipStatusBar;
     private VBox attackLogList;
 
-    public LocalBattleView(MainApp app, GameController controller) {
-        super(app, controller);
+    public LocalBattleView(ViewNavigator nav, GameController controller) {
+        super(nav, controller);
     }
 
     // ---------- Perspective helpers ----------
@@ -211,14 +211,14 @@ public class LocalBattleView extends AbstractBattleView {
     @Override
     protected void resolveShot(Coordinate anchor) {
         Player attacker = controller.getCurrentPlayer();
-        boolean hadNuclearAmmo = attacker.getAmmo().hasAmmo(LauncherType.NUCLEAR);
+        boolean hadNuclearAmmo = attacker.hasAmmo(LauncherType.NUCLEAR);
         LauncherFireResult result = controller.fireLauncher(anchor);
         applyResult(enemyGrid, result);
         refreshLauncherBar();
 
         if (controller.getState() == GameState.GAME_OVER) {
-            SoundManager.getInstance().stopBgm();
-            app.showGameOver(attacker);
+            audio.stopBgm();
+            nav.showGameOver(attacker);
             return;
         }
 
@@ -226,8 +226,8 @@ public class LocalBattleView extends AbstractBattleView {
         maybeTriggerNuclearResupply(attacker, hadNuclearAmmo);
 
         if (controller.getSelectedMode() == GameMode.HOTSEAT) {
-            SoundManager.getInstance().stopBgm();
-            app.showPassScreen(() -> app.showBattle());
+            audio.stopBgm();
+            nav.showPassScreen(() -> nav.showBattle());
         } else if (controller.isAiTurn()) {
             updateTurnBadge("ENEMY TURN", "turn-badge-enemy");
             enemyGrid.setDisable(true);
@@ -239,21 +239,21 @@ public class LocalBattleView extends AbstractBattleView {
         updateTurnBadge("COMPUTING TRAJECTORY...", "turn-badge-thinking");
         PauseTransition pause = new PauseTransition(Duration.millis(900));
         pause.setOnFinished(e -> {
-            SoundManager.getInstance().playFire();
+            audio.playFire();
             Player attacker = controller.getCurrentPlayer();
-            boolean hadNuclearAmmo = attacker.getAmmo().hasAmmo(LauncherType.NUCLEAR);
+            boolean hadNuclearAmmo = attacker.hasAmmo(LauncherType.NUCLEAR);
             LauncherFireResult result = controller.fireAiLauncher();
             applyResult(ownGrid, result);
 
             if (controller.getState() == GameState.GAME_OVER) {
-                SoundManager.getInstance().stopBgm();
-                app.showGameOver(attacker);
+                audio.stopBgm();
+                nav.showGameOver(attacker);
                 return;
             }
 
             maybeTriggerNuclearResupply(attacker, hadNuclearAmmo);
 
-            SoundManager.getInstance().playTurnStart();
+            audio.playTurnStart();
             updateTurnBadge(controller.getCurrentPlayer().getName() + "'S TURN", "turn-badge-player");
             refreshLauncherBar();
             enemyGrid.setDisable(false);
@@ -273,14 +273,14 @@ public class LocalBattleView extends AbstractBattleView {
             addLogEntry(sunkShip.getType().name().replace('_', ' ') + " SUNK!", "sunk");
         }
         if (anySunk) {
-            SoundManager.getInstance().playSunk();
+            audio.playSunk();
         } else {
             boolean anyHit = result.anyHit();
             if (anyHit) {
-                SoundManager.getInstance().playHit();
+                audio.playHit();
                 addLogEntry("Direct hit!", "hit");
             } else {
-                SoundManager.getInstance().playMiss();
+                audio.playMiss();
                 addLogEntry("Nothing but spray — miss.", "miss");
             }
         }
@@ -485,9 +485,9 @@ public class LocalBattleView extends AbstractBattleView {
      * auto-resupply countdown (quiz-gated) and top the stock back up on success.
      */
     private void maybeTriggerNuclearResupply(Player player, boolean hadNuclearAmmoBefore) {
-        if (hadNuclearAmmoBefore && !player.getAmmo().hasAmmo(LauncherType.NUCLEAR)) {
-            NuclearResupplyDialog.show(app.getStage(), () -> {
-                player.getAmmo().resupply(LauncherType.NUCLEAR, 1);
+        if (hadNuclearAmmoBefore && !player.hasAmmo(LauncherType.NUCLEAR)) {
+            NuclearResupplyDialog.show(nav.getStage(), () -> {
+                player.resupplyAmmo(LauncherType.NUCLEAR, 1);
                 refreshLauncherBar();
             });
         }

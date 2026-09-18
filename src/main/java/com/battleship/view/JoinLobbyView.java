@@ -8,6 +8,7 @@ import com.battleship.net.EnemyTracker;
 import com.battleship.net.NetMessage;
 import com.battleship.net.NetworkGameSession;
 import com.battleship.net.NetworkSession;
+import com.battleship.net.Role;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -25,12 +26,12 @@ import javafx.scene.text.FontWeight;
  */
 public class JoinLobbyView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
     private Label status;
 
-    public JoinLobbyView(MainApp app, GameController controller) {
-        this.app = app;
+    public JoinLobbyView(ViewNavigator nav, GameController controller) {
+        this.nav = nav;
         this.controller = controller;
     }
 
@@ -65,7 +66,7 @@ public class JoinLobbyView {
         Button back = new Button("BACK");
         back.getStyleClass().add("ghost-button");
         back.setPrefWidth(120);
-        back.setOnAction(e -> app.showMultiplayerLobby());
+        back.setOnAction(e -> nav.showMultiplayerLobby());
 
         VBox layout = new VBox(14, title, hint, inviteField, connect, status, back);
         layout.setAlignment(Pos.CENTER);
@@ -116,9 +117,9 @@ public class JoinLobbyView {
         Player me = new Player("You", true, new Board(size));
         me.initLauncherAmmo(size);
         NetworkGameSession netSession = new NetworkGameSession(
-                session, theater, false, me, new EnemyTracker(size));
+                session, theater, Role.CLIENT, me, new EnemyTracker(size));
 
-        app.setScreen(new NetworkShipPlaceView(app, controller, netSession).build());
+        nav.showNetworkShipPlacement(netSession);
     }
 
     private void showError(String message) {

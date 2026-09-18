@@ -28,20 +28,20 @@ import javafx.util.Duration;
  */
 public class NetworkGameOverView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final NetworkGameSession netSession;
     private final boolean won;
 
-    public NetworkGameOverView(MainApp app, NetworkGameSession netSession, boolean won) {
-        this.app = app;
+    public NetworkGameOverView(ViewNavigator nav, NetworkGameSession netSession, boolean won) {
+        this.nav = nav;
         this.netSession = netSession;
         this.won = won;
     }
 
     public StackPane build() {
         if (netSession.getSession() != null) netSession.getSession().close();
-        SoundManager.getInstance().stopBgm();
-        SoundManager.getInstance().playGameOver(won);
+        nav.getAudio().stopBgm();
+        nav.getAudio().playGameOver(won);
 
         Label banner = new Label(won ? "\uD83C\uDFC6  VICTORY" : "\u2620  DEFEAT");
         banner.setFont(Font.font("Arial Black", FontWeight.BOLD, 52));
@@ -63,7 +63,7 @@ public class NetworkGameOverView {
         returnToPort.setPrefWidth(190);
         returnToPort.setPrefHeight(46);
         returnToPort.getStyleClass().addAll("primary-button", "featured-button");
-        returnToPort.setOnAction(e -> { SoundManager.getInstance().playClick(); SoundManager.getInstance().playMenuMusic(); app.showMainMenu(); });
+        returnToPort.setOnAction(e -> { nav.getAudio().playClick(); nav.getAudio().playMenuMusic(); nav.showMainMenu(); });
 
         VBox titleBlock = new VBox(6, banner, subtitle);
         titleBlock.setAlignment(Pos.CENTER);

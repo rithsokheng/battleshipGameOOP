@@ -13,23 +13,24 @@ public class NetworkGameSession {
 
     private final NetworkSession session;
     private final Theater theater;
-    private final boolean isHost;
+    private final Role role;
     private final Player me;
     private final EnemyTracker enemyTracker;
     private volatile boolean myTurn;
 
-    public NetworkGameSession(NetworkSession session, Theater theater, boolean isHost,
+    public NetworkGameSession(NetworkSession session, Theater theater, Role role,
                               Player me, EnemyTracker enemyTracker) {
         this.session = session;
         this.theater = theater;
-        this.isHost = isHost;
+        this.role = role;
         this.me = me;
         this.enemyTracker = enemyTracker;
     }
 
     public NetworkSession getSession() { return session; }
     public Theater getTheater() { return theater; }
-    public boolean isHost() { return isHost; }
+    public Role getRole() { return role; }
+    public boolean isHost() { return role == Role.HOST; }
     public Player getMe() { return me; }
     public EnemyTracker getEnemyTracker() { return enemyTracker; }
     public boolean isMyTurn() { return myTurn; }
@@ -42,6 +43,6 @@ public class NetworkGameSession {
 
     /** Applies the host's START decision: hostMovesFirst determines whose turn it is. */
     public void beginMatch(boolean hostMovesFirst) {
-        this.myTurn = (isHost == hostMovesFirst);
+        this.myTurn = (isHost() == hostMovesFirst);
     }
 }

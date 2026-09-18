@@ -27,19 +27,19 @@ import javafx.util.Duration;
  */
 public class GameOverView {
 
-    private final MainApp app;
+    private final ViewNavigator nav;
     private final GameController controller;
     private final Player winner;
 
-    public GameOverView(MainApp app, GameController controller, Player winner) {
-        this.app = app;
+    public GameOverView(ViewNavigator nav, GameController controller, Player winner) {
+        this.nav = nav;
         this.controller = controller;
         this.winner = winner;
     }
 
     public StackPane build() {
         boolean playerWon = winner == controller.getPlayer1();
-        SoundManager.getInstance().playGameOver(playerWon);
+        nav.getAudio().playGameOver(playerWon);
 
         Label banner = new Label(playerWon ? "\uD83C\uDFC6  VICTORY" : "\u2620  DEFEAT");
         banner.setFont(Font.font("Arial Black", FontWeight.BOLD, 52));
@@ -67,13 +67,13 @@ public class GameOverView {
         reEngage.setPrefWidth(190);
         reEngage.setPrefHeight(46);
         reEngage.getStyleClass().addAll("primary-button", "featured-button");
-        reEngage.setOnAction(e -> { SoundManager.getInstance().playClick(); app.showBoardSelect(); });
+        reEngage.setOnAction(e -> { nav.getAudio().playClick(); nav.showBoardSelect(); });
 
         Button returnToPort = new Button("RETURN TO PORT");
         returnToPort.setPrefWidth(190);
         returnToPort.setPrefHeight(46);
         returnToPort.getStyleClass().add("ghost-button");
-        returnToPort.setOnAction(e -> { SoundManager.getInstance().playClick(); SoundManager.getInstance().playMenuMusic(); app.showMainMenu(); });
+        returnToPort.setOnAction(e -> { nav.getAudio().playClick(); nav.getAudio().playMenuMusic(); nav.showMainMenu(); });
 
         HBox buttons = new HBox(16, reEngage, returnToPort);
         buttons.setAlignment(Pos.CENTER);
