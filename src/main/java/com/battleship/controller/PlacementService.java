@@ -48,6 +48,11 @@ public class PlacementService {
         return player.getOwnBoard().removeShip(ship);
     }
 
+    /** Pulls an already-placed ship at the given coordinate back off the board. */
+    public boolean removeShipAt(Player player, Coordinate c) {
+        return player.getOwnBoard().removeShipAt(c);
+    }
+
     public boolean isPlacementComplete(Player player, Theater theater) {
         return player.getOwnBoard().getShips().size() == theater.getTotalShipCount();
     }

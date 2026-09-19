@@ -45,7 +45,7 @@ public abstract class AbstractBattleView {
     protected BoardGridPane enemyGrid;
     protected HBox launcherBar;
 
-    private final List<int[]> ghostCells = new ArrayList<>();
+    private final List<Coordinate> ghostCells = new ArrayList<>();
 
     protected AbstractBattleView(ViewNavigator nav, GameController controller) {
         this.nav = nav;
@@ -128,8 +128,32 @@ public abstract class AbstractBattleView {
     /** UI reaction to rejected nuclear launch codes (re-arm DEFAULT + repaint). */
     protected abstract void onNuclearRejected();
 
-    /** Weapon-button style class per state, e.g. {@code weapon-button-selected}. */
-    protected abstract String launcherButtonStyleClass(LauncherButtonState state);
+    /** Weapon-button style class per state, e.g. {@code weapon-button-selected}. Subclasses can override if needed (V3). */
+    protected String launcherButtonStyleClass(LauncherButtonState state) {
+        return switch (state) {
+            case DISABLED -> CssClasses.WEAPON_DISABLED;
+            case SELECTED -> CssClasses.WEAPON_SELECTED;
+            case ENABLED  -> CssClasses.WEAPON_ENABLED;
+        };
+    }
+
+    /** Default orientation label text shared across battle views (V4). */
+    protected final String orientationLabelText() {
+        Orientation o = firingPlayer().getLauncherOrientation();
+        return "Orientation: " + (o.isHorizontal() ? "HORIZONTAL" : "VERTICAL")
+                + "  (R or Right-Click to rotate \u2014 affects Level 2 / Nuclear)";
+    }
+
+    /** Shared shot outcome audio playback (V5). */
+    protected final void playResultAudio(boolean anyHit, boolean anySunk) {
+        if (anySunk) {
+            audio.playSunk();
+        } else if (anyHit) {
+            audio.playHit();
+        } else {
+            audio.playMiss();
+        }
+    }
 
     /** Confirmation text shown by the shared exit dialog. */
     protected abstract String exitPrompt();
@@ -198,13 +222,13 @@ public abstract class AbstractBattleView {
         for (Coordinate c : cells) {
             if (!c.isWithinBounds(size)) continue;
             enemyGrid.setCellState(c, ghostStyleClass());
-            ghostCells.add(new int[]{c.getRow(), c.getCol()});
+            ghostCells.add(c);
         }
     }
 
     private void clearGhost() {
-        for (int[] rc : ghostCells) {
-            repaintGhostCell(rc[0], rc[1]);
+        for (Coordinate gc : ghostCells) {
+            repaintGhostCell(gc.getRow(), gc.getCol());
         }
         ghostCells.clear();
     }

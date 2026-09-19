@@ -19,13 +19,22 @@ public class SaveGameService {
 
     /** Serializes the current game state and writes it to [timestamp]_battleship_save.json */
     public Path save(GameSaveDTO saveData, Path directory) throws IOException {
-        // TODO: build filename with Instant.now() timestamp, write JSON via gson
-        throw new UnsupportedOperationException("TODO");
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
+        }
+        String timestamp = saveData.getTimestamp() != null && !saveData.getTimestamp().isBlank()
+                ? saveData.getTimestamp()
+                : Instant.now().toString();
+        String safeTimestamp = timestamp.replace(":", "-");
+        Path file = directory.resolve(safeTimestamp + "_battleship_save.json");
+        String json = gson.toJson(saveData);
+        Files.writeString(file, json);
+        return file;
     }
 
     /** Parses a save file back into DTOs for GameController reconstruction. */
     public GameSaveDTO load(Path file) throws IOException {
-        // TODO: read file, gson.fromJson(...)
-        throw new UnsupportedOperationException("TODO");
+        String json = Files.readString(file);
+        return gson.fromJson(json, GameSaveDTO.class);
     }
 }

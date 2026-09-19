@@ -112,15 +112,6 @@ public class LocalBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected String launcherButtonStyleClass(LauncherButtonState state) {
-        return switch (state) {
-            case DISABLED -> "weapon-button-disabled";
-            case SELECTED -> "weapon-button-selected";
-            case ENABLED  -> "weapon-button-enabled";
-        };
-    }
-
-    @Override
     protected String exitPrompt() {
         return "Leave this battle and return to the main menu? Progress will be lost.";
     }
@@ -281,15 +272,12 @@ public class LocalBattleView extends AbstractBattleView {
             grid.renderSunkShip(sunkShip);
             addLogEntry(sunkShip.getType().name().replace('_', ' ') + " SUNK!", "sunk");
         }
-        if (anySunk) {
-            audio.playSunk();
-        } else {
-            boolean anyHit = result.anyHit();
+        boolean anyHit = result.anyHit();
+        playResultAudio(anyHit, anySunk);
+        if (!anySunk) {
             if (anyHit) {
-                audio.playHit();
                 addLogEntry("Direct hit!", "hit");
             } else {
-                audio.playMiss();
                 addLogEntry("Nothing but spray — miss.", "miss");
             }
         }
@@ -496,9 +484,7 @@ public class LocalBattleView extends AbstractBattleView {
     }
 
     private void updateOrientationLabel() {
-        Orientation orientation = firingPlayer().getLauncherOrientation();
-        orientationLabel.setText("Orientation: " + (orientation.isHorizontal() ? "HORIZONTAL" : "VERTICAL")
-                + "  (R or Right-Click to rotate — affects Level 2 / Nuclear)");
+        orientationLabel.setText(orientationLabelText());
     }
 
     /**

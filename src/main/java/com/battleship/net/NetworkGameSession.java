@@ -41,6 +41,23 @@ public class NetworkGameSession {
     /** Hands the turn to the remote opponent (after firing or when START says so). */
     public void beginOpponentTurn() { this.myTurn = false; }
 
+    /** Alias for beginMyTurn providing rich domain-action semantics. */
+    public void passTurnToMe() { beginMyTurn(); }
+
+    /** Alias for beginOpponentTurn providing rich domain-action semantics. */
+    public void passTurnToOpponent() { beginOpponentTurn(); }
+
+    /** Checks whether the local player is currently allowed to fire/act. */
+    public boolean canAct() {
+        return myTurn && !isGameOver();
+    }
+
+    /** Returns true if either fleet has been completely destroyed. */
+    public boolean isGameOver() {
+        return me.getOwnBoard().isAllShipsSunk()
+                || enemyTracker.getKnownSunkShips().size() >= theater.getTotalShipCount();
+    }
+
     /** Applies the host's START decision: hostMovesFirst determines whose turn it is. */
     public void beginMatch(boolean hostMovesFirst) {
         this.myTurn = (isHost() == hostMovesFirst);

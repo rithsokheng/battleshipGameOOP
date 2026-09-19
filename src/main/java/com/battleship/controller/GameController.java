@@ -26,8 +26,19 @@ import java.util.function.Consumer;
  */
 public class GameController {
 
-    private final PlacementService placementService = new PlacementService();
-    private final BattleService battleService = new BattleService();
+    private final PlacementService placementService;
+    private final BattleService battleService;
+
+    /** Testable constructor — inject services (DIP). */
+    public GameController(PlacementService placementService, BattleService battleService) {
+        this.placementService = placementService;
+        this.battleService = battleService;
+    }
+
+    /** Production convenience constructor. */
+    public GameController() {
+        this(new PlacementService(), new BattleService());
+    }
 
     private GameMode selectedMode;
     private Theater selectedTheater;
@@ -90,6 +101,11 @@ public class GameController {
     /** Pulls an already-placed ship back off the board and into the dock ("put out"). */
     public boolean removeShip(Player player, Ship ship) {
         return placementService.removeShip(player, ship);
+    }
+
+    /** Pulls an already-placed ship at the given coordinate back off the board and into the dock. */
+    public boolean removeShipAt(Player player, Coordinate c) {
+        return placementService.removeShipAt(player, c);
     }
 
     public boolean isPlacementComplete(Player player) {

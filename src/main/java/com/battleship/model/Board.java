@@ -72,6 +72,16 @@ public class Board {
         return true;
     }
 
+    /**
+     * Removes whatever ship is currently occupying coordinate {@code c}.
+     * Prevents external callers from needing a direct reference to internal Ship objects (encapsulation).
+     */
+    public boolean removeShipAt(Coordinate c) {
+        if (c == null || !c.isWithinBounds(size)) return false;
+        Ship ship = shipGrid[c.getRow()][c.getCol()];
+        return removeShip(ship);
+    }
+
     /** Removes all placed ships (used by RESET in placement UI). */
     public void clearShips() {
         ships.clear();
@@ -140,6 +150,11 @@ public class Board {
 
     public List<Ship> getShips() { return Collections.unmodifiableList(ships); }
 
+    /**
+     * @deprecated Exposing internal Ship references leaks mutable domain state.
+     * Use {@link #removeShipAt(Coordinate)} or status queries instead.
+     */
+    @Deprecated
     public Ship getShipAt(Coordinate c) {
         if (!c.isWithinBounds(size)) {
             throw new IllegalArgumentException("Coordinate " + c + " is out of bounds for board of size " + size);

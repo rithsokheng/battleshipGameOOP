@@ -53,7 +53,7 @@ public abstract class AbstractShipPlaceView {
     /** Current ship orientation, toggled by R / right-click / the ROTATE button. */
     protected Orientation orientation = Orientation.HORIZONTAL;
 
-    private final List<int[]> ghostCells = new ArrayList<>();
+    private final List<Coordinate> ghostCells = new ArrayList<>();
 
     protected AbstractShipPlaceView(ViewNavigator nav, GameController controller, Player player) {
         this.nav = nav;
@@ -179,10 +179,10 @@ public abstract class AbstractShipPlaceView {
 
                 cell.setOnMouseClicked(event -> {
                     if (event.getButton() != MouseButton.PRIMARY) return;
-                    Ship ship = player.getOwnBoard().getShipAt(new Coordinate(row, col));
-                    if (ship != null) {
+                    Coordinate clicked = new Coordinate(row, col);
+                    boolean removed = controller.removeShipAt(player, clicked);
+                    if (removed) {
                         audio.playRemoveShip();
-                        controller.removeShip(player, ship);
                         refreshAll();
                     }
                 });
@@ -217,14 +217,15 @@ public abstract class AbstractShipPlaceView {
             int gr = orientation.isHorizontal() ? row : row + i;
             int gc = orientation.isHorizontal() ? col + i : col;
             if (gr < 0 || gr >= boardGridPane.getSize() || gc < 0 || gc >= boardGridPane.getSize()) continue;
-            boardGridPane.setCellState(new Coordinate(gr, gc), stateClass);
-            ghostCells.add(new int[]{gr, gc});
+            Coordinate ghostCoord = new Coordinate(gr, gc);
+            boardGridPane.setCellState(ghostCoord, stateClass);
+            ghostCells.add(ghostCoord);
         }
     }
 
     private void clearGhost() {
-        for (int[] rc : ghostCells) {
-            boardGridPane.resetCellStyle(rc[0], rc[1]);
+        for (Coordinate c : ghostCells) {
+            boardGridPane.resetCellStyle(c.getRow(), c.getCol());
         }
         ghostCells.clear();
         // Re-render any already-placed ships that may have been under the ghost.

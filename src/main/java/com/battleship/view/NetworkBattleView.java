@@ -10,6 +10,7 @@ import com.battleship.model.Player;
 import com.battleship.model.Ship;
 import com.battleship.model.ShotResult;
 import com.battleship.net.NetMessage;
+import com.battleship.net.NetworkBattleMediator;
 import com.battleship.net.NetworkGameSession;
 import com.battleship.view.quiz.NuclearResupplyDialog;
 import javafx.geometry.Insets;
@@ -35,6 +36,7 @@ public class NetworkBattleView extends AbstractBattleView {
 
     private final NetworkGameSession netSession;
     private final Player me;
+    private final NetworkBattleMediator mediator;
 
     private Label turnLabel;
     private Label logLabel;
@@ -45,6 +47,7 @@ public class NetworkBattleView extends AbstractBattleView {
         super(nav, controller);
         this.netSession = netSession;
         this.me = netSession.getMe();
+        this.mediator = new NetworkBattleMediator(netSession);
     }
 
     // ---------- AbstractBattleView hooks ----------
@@ -98,15 +101,6 @@ public class NetworkBattleView extends AbstractBattleView {
         me.selectLauncher(LauncherType.DEFAULT, controller.getSelectedTheater().getBoardSize());
         logLabel.setText("Launch codes rejected. Nuclear strike aborted \u2014 Default weapon re-armed.");
         refreshLauncherBar();
-    }
-
-    @Override
-    protected String launcherButtonStyleClass(LauncherButtonState state) {
-        return switch (state) {
-            case DISABLED -> "weapon-button-disabled";
-            case SELECTED -> "weapon-button-selected";
-            case ENABLED  -> "weapon-button-enabled";
-        };
     }
 
     @Override
@@ -191,10 +185,10 @@ public class NetworkBattleView extends AbstractBattleView {
 
     private void handleMessage(NetMessage msg) {
         if (msg == null) return;
-        if (msg instanceof NetMessage.Fire) {
-            handleIncomingFire((NetMessage.Fire) msg);
-        } else if (msg instanceof NetMessage.FireResult) {
-            handleFireResult((NetMessage.FireResult) msg);
+        switch (msg) {
+            case NetMessage.Fire f        -> handleIncomingFire(f);
+            case NetMessage.FireResult fr -> handleFireResult(fr);
+            default -> { /* lobby-phase messages ignored during battle */ }
         }
     }
 
@@ -207,52 +201,24 @@ public class NetworkBattleView extends AbstractBattleView {
         nav.showMainMenu();
     }
 
-    /** I am the defender: resolve the incoming shot against my real board and reply. */
+    /** I am the defender: delegate incoming fire resolution and response to mediator, then render. */
     private void handleIncomingFire(NetMessage.Fire fire) {
-        var myBoard = me.getOwnBoard();
+        NetworkBattleMediator.IncomingFireOutcome outcome = mediator.resolveAndReply(fire);
 
-        // Delegated to the shared controller-layer resolver (V8): the exact
-        // same fire rules as the local BattleService, with no duplicated
-        // resolution logic in the view.
-        LauncherFireResult resolution = ShotResolver.resolve(
-                myBoard, fire.launcherType(), fire.anchor(), fire.orientation());
-        List<ShotResult> results = resolution.results();
-        List<Ship> sunk = resolution.sunkShips();
-
-        for (ShotResult r : results) {
+        for (ShotResult r : outcome.resolution().results()) {
             if (r.outcome() != CellStatus.SUNK) ownGrid.renderShot(r.coordinate(), r.outcome());
         }
-        for (Ship s : sunk) ownGrid.renderSunkShip(s);
-
-        boolean lost = myBoard.isAllShipsSunk();
-
-        List<NetMessage.CellResult> cellResults = new ArrayList<>();
-        for (ShotResult r : results) {
-            cellResults.add(new NetMessage.CellResult(r.coordinate(), r.outcome()));
-        }
-        List<NetMessage.SunkShipInfo> sunkInfos = new ArrayList<>();
-        for (Ship s : sunk) {
-            sunkInfos.add(new NetMessage.SunkShipInfo(s.getType(), s.getOccupiedCells()));
-        }
-        netSession.getSession().send(new NetMessage.FireResult(cellResults, sunkInfos, lost));
+        for (Ship s : outcome.resolution().sunkShips()) ownGrid.renderSunkShip(s);
 
         refreshFleetStatus();
 
-        if (lost) {
+        if (outcome.lost()) {
             goToGameOver(false);
             return;
         }
 
-        boolean anyHit = results.stream().anyMatch(ShotResult::isHit);
-        boolean anySunk = !sunk.isEmpty();
-        if (anySunk) {
-            audio.playSunk();
-        } else if (anyHit) {
-            audio.playHit();
-        } else {
-            audio.playMiss();
-        }
-        logLabel.setText(anyHit ? "Incoming fire — you took damage!" : "Incoming fire — they missed.");
+        playResultAudio(outcome.anyHit(), outcome.anySunk());
+        logLabel.setText(outcome.anyHit() ? "Incoming fire \u2014 you took damage!" : "Incoming fire \u2014 they missed.");
         netSession.beginMyTurn();
         audio.playTurnStart();
         turnLabel.setText("YOUR TURN");
@@ -315,17 +281,6 @@ public class NetworkBattleView extends AbstractBattleView {
         return log.toString();
     }
 
-    /** One sunk sting, else one hit sting, else a miss. */
-    private void playResultAudio(boolean anyHit, boolean anySunk) {
-        if (anySunk) {
-            audio.playSunk();
-        } else if (anyHit) {
-            audio.playHit();
-        } else {
-            audio.playMiss();
-        }
-    }
-
     /** My shot is resolved — hand the turn back to the opponent. */
     private void handTurnToOpponent() {
         netSession.beginOpponentTurn();
@@ -374,9 +329,7 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     private void updateOrientationLabel() {
-        com.battleship.model.Orientation orientation = me.getLauncherOrientation();
-        orientationLabel.setText("Orientation: " + (orientation.isHorizontal() ? "HORIZONTAL" : "VERTICAL") +
-                "  (R or Right-Click to rotate — affects Level 2 / Nuclear)");
+        orientationLabel.setText(orientationLabelText());
     }
 
     @Override
