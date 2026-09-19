@@ -7,8 +7,12 @@ import java.util.List;
 /**
  * Aggregate root representing one player's grid: cell states, placed ships,
  * and shot resolution. Pure domain object — no JavaFX dependency.
+ *
+ * Implements {@link ReadOnlyBoard}: query access is available through the
+ * interface; the mutating methods below are only reachable on the concrete
+ * {@link Board} type, which services obtain via {@link Player#getMutableBoard()}.
  */
-public class Board {
+public class Board implements ReadOnlyBoard {
 
     private final int size;
     private final CellStatus[][] grid;
@@ -149,16 +153,4 @@ public class Board {
     }
 
     public List<Ship> getShips() { return Collections.unmodifiableList(ships); }
-
-    /**
-     * @deprecated Exposing internal Ship references leaks mutable domain state.
-     * Use {@link #removeShipAt(Coordinate)} or status queries instead.
-     */
-    @Deprecated
-    public Ship getShipAt(Coordinate c) {
-        if (!c.isWithinBounds(size)) {
-            throw new IllegalArgumentException("Coordinate " + c + " is out of bounds for board of size " + size);
-        }
-        return shipGrid[c.getRow()][c.getCol()];
-    }
 }

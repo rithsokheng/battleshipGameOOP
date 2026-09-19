@@ -8,6 +8,7 @@ import com.battleship.model.GameState;
 import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
+import com.battleship.model.ReadOnlyBoard;
 import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 import com.battleship.model.Theater;
@@ -28,11 +29,13 @@ public class GameController {
 
     private final PlacementService placementService;
     private final BattleService battleService;
+    private final NetworkFireService networkFireService;
 
     /** Testable constructor — inject services (DIP). */
     public GameController(PlacementService placementService, BattleService battleService) {
         this.placementService = placementService;
         this.battleService = battleService;
+        this.networkFireService = new NetworkFireService();
     }
 
     /** Production convenience constructor. */
@@ -214,6 +217,42 @@ public class GameController {
     public GameState getState() { return state; }
     public GameMode getSelectedMode() { return selectedMode; }
     public Theater getSelectedTheater() { return selectedTheater; }
-    public Player getPlayer1() { return player1; }
-    public Player getPlayer2() { return player2; }
+
+    // ---------- Read-only player queries (fixes F2: views never receive mutable Players) ----------
+
+    /** Name of player 1 or 2 (1-indexed). */
+    public String getPlayerName(int index) {
+        return index == 1 ? player1.getName() : player2.getName();
+    }
+
+    /** Read-only view of player 1 or 2's board (1-indexed). */
+    public ReadOnlyBoard getPlayerBoard(int index) {
+        return index == 1 ? player1.getOwnBoard() : player2.getOwnBoard();
+    }
+
+    /** Identity check for game-over reporting: is the given player player 1? */
+    public boolean isFirstPlayer(Player player) {
+        return player == player1;
+    }
+
+    // ---------- Network fire pipeline (fixes F7: view no longer mutates the domain) ----------
+
+    /**
+     * Applies the domain bookkeeping for a network shot (ammo consumption,
+     * launcher reset) and returns the order to transmit over the wire.
+     */
+    public NetworkFireService.NetworkShotOrder fireNetworkShot(Player shooter, LauncherType type,
+                                                               Coordinate anchor, Orientation orientation) {
+        return networkFireService.fireNetworkShot(shooter, type, anchor, orientation);
+    }
+
+    /** Tops the shooter's nuclear ammo back up after a successful quiz resupply. */
+    public void resupplyNuclearAmmo(Player shooter) {
+        networkFireService.resupplyNuclear(shooter);
+    }
+
+    // ---------- Mutable access (package-private; controller-internal/tests only — fixes F2) ----------
+
+    Player getPlayer1() { return player1; }
+    Player getPlayer2() { return player2; }
 }

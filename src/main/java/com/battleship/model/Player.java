@@ -70,7 +70,20 @@ public class Player {
 
     public String getName() { return name; }
     public boolean isHuman() { return isHuman; }
-    public Board getOwnBoard() { return ownBoard; }
+
+    /**
+     * Read-only view of this player's board (fixes F1). Views must render from
+     * this — mutation methods (placeShip, receiveShot, clearShips) are not on
+     * the interface.
+     */
+    public ReadOnlyBoard getOwnBoard() { return ownBoard; }
+
+    /**
+     * Service-layer escape hatch (fixes F1): PlacementService, BattleService,
+     * ShotResolver and NetworkBattleMediator legitimately need to mutate the
+     * board. UI code must use {@link #getOwnBoard()} instead.
+     */
+    public Board getMutableBoard() { return ownBoard; }
 
     // --- Ammo access, delegated (fixes V1: getAmmo() no longer leaks the mutable AmmoInventory) ---
 

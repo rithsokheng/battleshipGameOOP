@@ -13,10 +13,13 @@ com/battleship/controller/GameController.class
 com/battleship/view/decor/OceanSceneRenderer$2.class
 com/battleship/model/Board.class
 com/battleship/net/NetMessage$CellResult.class
+com/battleship/controller/NetworkFireService.class
+com/battleship/model/ReadOnlyBoard.class
 com/battleship/ai/AIStrategy.class
 com/battleship/model/Theater.class
 com/battleship/net/NetUtil.class
 com/battleship/net/NetMessage$Start.class
+com/battleship/controller/ShotResolution.class
 com/battleship/view/MusicAudio.class
 com/battleship/model/Turn.class
 com/battleship/view/BoardGridPane.class
@@ -25,9 +28,9 @@ com/battleship/net/NetMessage$Fire.class
 com/battleship/view/quiz/QuizBank.class
 com/battleship/model/Coordinate.class
 com/battleship/persistence/SaveGameService.class
-com/battleship/view/quiz/QuizQuestion.class
 com/battleship/view/MultiplayerLobbyView.class
 com/battleship/view/SoundManager.class
+com/battleship/view/quiz/QuizQuestion.class
 com/battleship/net/NetworkBattleMediator.class
 com/battleship/view/BoardGridPane$1.class
 com/battleship/ai/HuntTargetAI.class
@@ -38,6 +41,7 @@ com/battleship/view/decor/OceanSceneRenderer.class
 com/battleship/ai/AIFactory.class
 com/battleship/controller/ShotResolver.class
 com/battleship/view/NetworkGameOverView.class
+com/battleship/controller/NetworkFireService$NetworkShotOrder.class
 com/battleship/ai/TargetingQueue.class
 com/battleship/view/QrCodeUtil.class
 com/battleship/net/NetworkSession.class
@@ -53,8 +57,8 @@ com/battleship/model/LauncherType.class
 com/battleship/view/decor/OceanRibbonRenderer.class
 com/battleship/view/JoinLobbyView.class
 com/battleship/view/SoundGenerator.class
-com/battleship/view/quiz/NuclearResupplyDialog.class
 com/battleship/view/NetworkBattleView.class
+com/battleship/view/quiz/NuclearResupplyDialog.class
 com/battleship/view/AudioSettings.class
 com/battleship/model/GameState.class
 com/battleship/ai/RandomAI.class
@@ -90,6 +94,7 @@ com/battleship/net/NetMessage$Reject.class
 com/battleship/view/ShipPlaceView$1.class
 com/battleship/view/ShipDockPane.class
 com/battleship/view/DecorUtil.class
+com/battleship/ai/AIFactory$1.class
 com/battleship/net/NetMessageCodec.class
 com/battleship/view/AbstractBattleView$LauncherButtonState.class
 com/battleship/view/decor/RadarSweepRenderer.class

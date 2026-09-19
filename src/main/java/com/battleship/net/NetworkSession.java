@@ -16,8 +16,12 @@ import java.util.function.Consumer;
 /**
  * Thin TCP transport for a single host&lt;-&gt;client connection: one JSON
  * {@link NetMessage} per line. Connection setup and the blocking read loop run
- * on a background daemon thread; every callback is marshalled back onto the
- * JavaFX application thread via {@link Platform#runLater}.
+ * on a background daemon thread; every callback is marshalled onto the
+ * caller-supplied thread dispatcher (fixes F6). Production callers pass
+ * {@code Platform::runLater}; tests pass {@code Runnable::run} so this class
+ * is testable without a JavaFX runtime. The overloaded factory methods without
+ * a dispatcher argument default to {@link Platform#runLater} for backward
+ * compatibility.
  */
 public class NetworkSession {
 
@@ -28,23 +32,37 @@ public class NetworkSession {
     private PrintWriter out;
     private volatile boolean running = true;
 
+    /** Marshalls callbacks onto the UI thread; injectable so tests can run inline (fixes F6). */
+    private Consumer<Runnable> threadDispatcher = Platform::runLater;
+
     private Consumer<NetMessage> onMessage;
     private Runnable onDisconnected;
 
     private NetworkSession() { }
 
+    private void dispatch(Runnable action) {
+        threadDispatcher.accept(action);
+    }
+
     /** Opens a listening socket on {@code port} and waits for exactly one peer to connect. */
     public static NetworkSession host(int port, Consumer<NetworkSession> onClientConnected, Consumer<Exception> onError) {
+        return host(port, onClientConnected, onError, Platform::runLater);
+    }
+
+    /** Opens a listening socket, dispatching callbacks through the supplied dispatcher (fixes F6). */
+    public static NetworkSession host(int port, Consumer<NetworkSession> onClientConnected,
+                                      Consumer<Exception> onError, Consumer<Runnable> threadDispatcher) {
         NetworkSession session = new NetworkSession();
+        session.threadDispatcher = threadDispatcher;
         Thread t = new Thread(() -> {
             try {
                 session.serverSocket = new ServerSocket(port);
                 Socket client = session.serverSocket.accept();
                 session.attach(client);
-                Platform.runLater(() -> onClientConnected.accept(session));
+                session.dispatch(() -> onClientConnected.accept(session));
                 session.listenLoop();
             } catch (Exception ex) {
-                if (session.running) Platform.runLater(() -> onError.accept(ex));
+                if (session.running) session.dispatch(() -> onError.accept(ex));
             }
         }, "battleship-net-host");
         t.setDaemon(true);
@@ -54,16 +72,23 @@ public class NetworkSession {
 
     /** Connects out to a host's IP/port. */
     public static void connect(String host, int port, Consumer<NetworkSession> onConnected, Consumer<Exception> onError) {
+        connect(host, port, onConnected, onError, Platform::runLater);
+    }
+
+    /** Connects out to a host, dispatching callbacks through the supplied dispatcher (fixes F6). */
+    public static void connect(String host, int port, Consumer<NetworkSession> onConnected,
+                               Consumer<Exception> onError, Consumer<Runnable> threadDispatcher) {
         Thread t = new Thread(() -> {
             NetworkSession session = new NetworkSession();
+            session.threadDispatcher = threadDispatcher;
             try {
                 Socket socket = new Socket();
                 socket.connect(new InetSocketAddress(host, port), 8000);
                 session.attach(socket);
-                Platform.runLater(() -> onConnected.accept(session));
+                session.dispatch(() -> onConnected.accept(session));
                 session.listenLoop();
             } catch (Exception ex) {
-                Platform.runLater(() -> onError.accept(ex));
+                session.dispatch(() -> onError.accept(ex));
             }
         }, "battleship-net-client");
         t.setDaemon(true);
@@ -82,14 +107,14 @@ public class NetworkSession {
             while (running && (line = in.readLine()) != null) {
                 NetMessage msg = codec.decode(line);
                 if (onMessage != null) {
-                    Platform.runLater(() -> onMessage.accept(msg));
+                    dispatch(() -> onMessage.accept(msg));
                 }
             }
         } catch (IOException ignored) {
             // socket closed locally, or connection dropped by the peer
         } finally {
             running = false;
-            if (onDisconnected != null) Platform.runLater(onDisconnected);
+            if (onDisconnected != null) dispatch(onDisconnected);
         }
     }
 

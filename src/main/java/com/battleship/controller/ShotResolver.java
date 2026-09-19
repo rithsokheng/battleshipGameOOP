@@ -13,13 +13,20 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
- * Reusable utility that resolves one launcher shot against a target board
- * (fixes V8). Used by both {@link BattleService} (local match) and the
- * defending side of a network match ({@code NetworkBattleView}), so the
+ * Reusable resolver for one launcher shot against a target board
+ * (fixes V8 + F5). Used by both {@link BattleService} (local match) and the
+ * defending side of a network match ({@code NetworkBattleMediator}), so the
  * fire-resolution rules live in exactly one place instead of being
  * copy-pasted into a view class (DRY + SRP).
+ *
+ * Implements {@link ShotResolution} so it can be injected (and swapped/mocked)
+ * via the {@link #STANDARD} singleton; the class is no longer a static-only
+ * utility.
  */
-public final class ShotResolver {
+public final class ShotResolver implements ShotResolution {
+
+    /** Shared production instance for constructor/default injection. */
+    public static final ShotResolver STANDARD = new ShotResolver();
 
     private ShotResolver() { }
 
@@ -30,7 +37,8 @@ public final class ShotResolver {
      *
      * @return the aggregated result (per-cell outcomes + ships sunk this shot)
      */
-    public static LauncherFireResult resolve(
+    @Override
+    public LauncherFireResult resolve(
             Board targetBoard,
             LauncherType launcherType,
             Coordinate anchor,

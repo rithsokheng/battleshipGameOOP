@@ -26,7 +26,7 @@ public class MainApp extends Application implements ViewNavigator {
         scene.getStylesheets().add(getClass().getResource("/styles/battleship.css").toExternalForm());
         stage.setTitle("Battleship: Naval Command");
         stage.setScene(scene);
-        SoundManager.getInstance().playMenuMusic();
+        getAudio().playMenuMusic();
         showMainMenu();
         stage.show();
     }

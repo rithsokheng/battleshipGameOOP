@@ -35,30 +35,30 @@ public class PlacementService {
                              ShipType type, Coordinate start, Orientation orientation) {
         Map<ShipType, Integer> remaining = getRemainingShipCounts(player, theater);
         if (!remaining.containsKey(type) || remaining.get(type) <= 0) return false;
-        return player.getOwnBoard().placeShip(type, start, orientation);
+        return player.getMutableBoard().placeShip(type, start, orientation);
     }
 
     /** Validates placement without mutating state. */
     public boolean canPlace(Player player, ShipType type, Coordinate start, Orientation orientation) {
-        return player.getOwnBoard().isValidPlacement(type, start, orientation);
+        return player.getMutableBoard().isValidPlacement(type, start, orientation);
     }
 
     /** Pulls an already-placed ship back off the board ("put ship back"). */
     public boolean removeShip(Player player, Ship ship) {
-        return player.getOwnBoard().removeShip(ship);
+        return player.getMutableBoard().removeShip(ship);
     }
 
     /** Pulls an already-placed ship at the given coordinate back off the board. */
     public boolean removeShipAt(Player player, Coordinate c) {
-        return player.getOwnBoard().removeShipAt(c);
+        return player.getMutableBoard().removeShipAt(c);
     }
 
     public boolean isPlacementComplete(Player player, Theater theater) {
-        return player.getOwnBoard().getShips().size() == theater.getTotalShipCount();
+        return player.getMutableBoard().getShips().size() == theater.getTotalShipCount();
     }
 
     public void resetPlacement(Player player) {
-        player.getOwnBoard().clearShips();
+        player.getMutableBoard().clearShips();
     }
 
     /** Randomly places all remaining ships for the player (spec 4.2, retry until success). */
@@ -70,7 +70,7 @@ public class PlacementService {
                 boolean placed = false;
                 for (int attempt = 0; attempt < 10_000 && !placed; attempt++) {
                     Coordinate start = new Coordinate(RANDOM.nextInt(size), RANDOM.nextInt(size));
-                    placed = player.getOwnBoard().placeShip(entry.getKey(), start, Orientation.random(RANDOM));
+                    placed = player.getMutableBoard().placeShip(entry.getKey(), start, Orientation.random(RANDOM));
                 }
             }
         }

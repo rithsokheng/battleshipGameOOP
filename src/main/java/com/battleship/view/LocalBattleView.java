@@ -2,7 +2,6 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.controller.LauncherFireResult;
-import com.battleship.model.Board;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.GameMode;
@@ -10,6 +9,7 @@ import com.battleship.model.GameState;
 import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
+import com.battleship.model.ReadOnlyBoard;
 import com.battleship.model.Ship;
 import com.battleship.model.ShotResult;
 import com.battleship.view.quiz.NuclearResupplyDialog;
@@ -51,12 +51,24 @@ public class LocalBattleView extends AbstractBattleView {
 
     private boolean vsAi() { return controller.getSelectedMode() != GameMode.HOTSEAT; }
 
-    private Player viewPerspective() {
-        return vsAi() ? controller.getPlayer1() : controller.getCurrentPlayer();
+    /** Name shown for "my" side: always the human in vs-AI, the current player in hotseat. */
+    private String perspectiveName() {
+        return vsAi() ? controller.getPlayerName(1) : controller.getCurrentPlayer().getName();
     }
 
-    private Player viewOpponent() {
-        return vsAi() ? controller.getPlayer2() : controller.getOpponent();
+    /** Read-only view of "my" fleet's board (fixes F1/F2). */
+    private ReadOnlyBoard perspectiveBoard() {
+        return vsAi() ? controller.getPlayerBoard(1) : controller.getCurrentPlayer().getOwnBoard();
+    }
+
+    /** Name shown for the opposing side. */
+    private String opponentName() {
+        return vsAi() ? controller.getPlayerName(2) : controller.getOpponent().getName();
+    }
+
+    /** Read-only view of the opposing fleet's board (fixes F1/F2). */
+    private ReadOnlyBoard opponentBoard() {
+        return vsAi() ? controller.getPlayerBoard(2) : controller.getOpponent().getOwnBoard();
     }
 
     // ---------- AbstractBattleView hooks ----------
@@ -69,12 +81,12 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected int targetBoardSize() {
-        return controller.getOpponent().getOwnBoard().getSize();
+        return opponentBoard().getSize();
     }
 
     @Override
     protected boolean isCellAlreadyResolved(Coordinate c) {
-        CellStatus s = controller.getOpponent().getOwnBoard().getCellStatus(c);
+        CellStatus s = opponentBoard().getCellStatus(c);
         return s == CellStatus.HIT || s == CellStatus.MISS || s == CellStatus.SUNK;
     }
 
@@ -86,7 +98,7 @@ public class LocalBattleView extends AbstractBattleView {
     @Override
     protected void repaintGhostCell(int row, int col) {
         Coordinate c = new Coordinate(row, col);
-        CellStatus status = controller.getOpponent().getOwnBoard().getCellStatus(c);
+        CellStatus status = opponentBoard().getCellStatus(c);
         if (status == CellStatus.HIT || status == CellStatus.MISS) {
             enemyGrid.renderShot(c, status);
         } else {
@@ -123,10 +135,10 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected BoardGridPane createOwnGrid() {
-        Player current = viewPerspective();
-        BoardGridPane grid = new BoardGridPane(current.getOwnBoard().getSize());
-        renderExistingShots(grid, current.getOwnBoard());
-        for (Ship s : current.getOwnBoard().getShips()) {
+        ReadOnlyBoard ownBoard = perspectiveBoard();
+        BoardGridPane grid = new BoardGridPane(ownBoard.getSize());
+        renderExistingShots(grid, ownBoard);
+        for (Ship s : ownBoard.getShips()) {
             if (!s.isSunk()) grid.renderShip(s);
         }
         return grid;
@@ -134,7 +146,7 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected BoardGridPane createEnemyGrid() {
-        return new BoardGridPane(viewOpponent().getOwnBoard().getSize());
+        return new BoardGridPane(opponentBoard().getSize());
     }
 
     @Override
@@ -151,7 +163,7 @@ public class LocalBattleView extends AbstractBattleView {
         HBox content = new HBox(24, leftColumn, sidePanel);
         content.setAlignment(Pos.TOP_CENTER);
 
-        HBox commandBar = buildCommandBar(viewPerspective(), viewOpponent());
+        HBox commandBar = buildCommandBar(perspectiveName(), opponentName());
         VBox layout = new VBox(16, commandBar, content);
         layout.setAlignment(Pos.TOP_CENTER);
         layout.setPadding(new Insets(20));
@@ -202,7 +214,7 @@ public class LocalBattleView extends AbstractBattleView {
             enemyGrid.setDisable(true);
             runAiTurnAfterDelay();
         } else {
-            updateTurnBadge(viewPerspective().getName() + "'S TURN", "turn-badge-player");
+            updateTurnBadge(perspectiveName() + "'S TURN", "turn-badge-player");
         }
     }
 
@@ -287,7 +299,7 @@ public class LocalBattleView extends AbstractBattleView {
 
     // ---------- Local chrome: command bar / side console ----------
 
-    private HBox buildCommandBar(Player current, Player opponent) {
+    private HBox buildCommandBar(String currentName, String opponentName) {
         turnLabel = new Label();
         turnLabel.getStyleClass().addAll("turn-badge", "turn-badge-player");
 
@@ -299,9 +311,9 @@ public class LocalBattleView extends AbstractBattleView {
         vs.getStyleClass().add("vs-divider");
 
         HBox chips = new HBox(20,
-                chipText(current.getName(), "COMMANDER"),
+                chipText(currentName, "COMMANDER"),
                 vs,
-                chipText(opponent.getName(),
+                chipText(opponentName,
                         controller.getSelectedMode() != GameMode.HOTSEAT ? "HOSTILE FLEET" : "COMMANDER"));
         chips.setAlignment(Pos.CENTER);
 
@@ -468,7 +480,7 @@ public class LocalBattleView extends AbstractBattleView {
         return row;
     }
 
-    private void renderExistingShots(BoardGridPane grid, Board board) {
+    private void renderExistingShots(BoardGridPane grid, ReadOnlyBoard board) {
         for (int r = 0; r < board.getSize(); r++) {
             for (int c = 0; c < board.getSize(); c++) {
                 Coordinate coord = new Coordinate(r, c);
@@ -494,7 +506,8 @@ public class LocalBattleView extends AbstractBattleView {
     private void maybeTriggerNuclearResupply(Player player, boolean hadNuclearAmmoBefore) {
         if (hadNuclearAmmoBefore && !player.hasAmmo(LauncherType.NUCLEAR)) {
             NuclearResupplyDialog.show(nav.getStage(), () -> {
-                player.resupplyAmmo(LauncherType.NUCLEAR, 1);
+                // Fix 2/F7: resupply goes through the controller-owned service, never the raw Player.
+                controller.resupplyNuclearAmmo(player);
                 refreshLauncherBar();
             });
         }

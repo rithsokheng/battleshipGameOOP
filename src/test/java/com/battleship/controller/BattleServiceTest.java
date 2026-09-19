@@ -60,7 +60,7 @@ class BattleServiceTest {
         Player p2 = new Player("P2", true, new Board(10));
         p1.initLauncherAmmo(10);
         p2.initLauncherAmmo(10);
-        assertTrue(p2.getOwnBoard().placeShip(ShipType.PATROL_BOAT, new Coordinate(0, 0), Orientation.HORIZONTAL));
+        assertTrue(p2.getMutableBoard().placeShip(ShipType.PATROL_BOAT, new Coordinate(0, 0), Orientation.HORIZONTAL));
 
         BattleService service = initFor(p1, p1, p2);
         p1.prepareShot(LauncherType.NUCLEAR, Orientation.HORIZONTAL);

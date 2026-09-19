@@ -19,6 +19,9 @@ public class BattleService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    /** Shot-resolution strategy, injectable for tests (fixes F5). */
+    private final ShotResolution shotResolution;
+
     private Player player1;
     private Player player2;
     private AIStrategy aiStrategy;   // null in hotseat mode
@@ -26,6 +29,16 @@ public class BattleService {
 
     /** True only between a fire() that ended the match and the controller reacting to it. */
     private boolean battleOver;
+
+    /** Production constructor — uses the standard shot resolver. */
+    public BattleService() {
+        this(ShotResolver.STANDARD);
+    }
+
+    /** Testable constructor — inject the shot-resolution strategy (DIP, fixes F5). */
+    public BattleService(ShotResolution shotResolution) {
+        this.shotResolution = shotResolution;
+    }
 
     public void init(Player player1, Player player2, AIStrategy aiStrategy) {
         this.player1 = player1;
@@ -72,8 +85,8 @@ public class BattleService {
         Player defender = getOpponent();
         LauncherType type = attacker.getSelectedLauncher();
 
-        LauncherFireResult result = ShotResolver.resolve(
-                defender.getOwnBoard(),
+        LauncherFireResult result = shotResolution.resolve(
+                defender.getMutableBoard(),
                 type,
                 anchor,
                 attacker.getLauncherOrientation());
@@ -96,7 +109,7 @@ public class BattleService {
 
     /** Has the AI choose a weapon + target, applies the selection, and fires it. */
     public LauncherFireResult fireAiLauncher() {
-        AiShotPlan plan = aiStrategy.chooseShotPlan(player1.getOwnBoard(), player2);
+        AiShotPlan plan = aiStrategy.chooseShotPlan(player1.getMutableBoard(), player2);
         player2.prepareShot(plan.type(), plan.orientation());
         return fire(plan.anchor());
     }

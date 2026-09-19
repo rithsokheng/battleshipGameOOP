@@ -38,7 +38,7 @@ public class GameOverView {
     }
 
     public StackPane build() {
-        boolean playerWon = winner == controller.getPlayer1();
+        boolean playerWon = controller.isFirstPlayer(winner);
         nav.getAudio().playGameOver(playerWon);
 
         Label banner = new Label(playerWon ? "\uD83C\uDFC6  VICTORY" : "\u2620  DEFEAT");
@@ -51,9 +51,9 @@ public class GameOverView {
         subtitle.setFont(Font.font("Arial", FontWeight.SEMI_BOLD, 13));
         subtitle.getStyleClass().add("app-subtitle");
 
-        VBox ownBoard = revealedBoardCard("YOUR FLEET", controller.getPlayer1().getOwnBoard());
+        VBox ownBoard = revealedBoardCard("YOUR FLEET", controller.getPlayerBoard(1));
         VBox enemyBoard = revealedBoardCard(
-                controller.getPlayer2().getName().toUpperCase() + "'S FLEET", controller.getPlayer2().getOwnBoard());
+                controller.getPlayerName(2).toUpperCase() + "'S FLEET", controller.getPlayerBoard(2));
 
         HBox boards = new HBox(28, ownBoard, enemyBoard);
         boards.setAlignment(Pos.CENTER);
@@ -108,7 +108,7 @@ public class GameOverView {
         return root;
     }
 
-    private VBox revealedBoardCard(String label, Board board) {
+    private VBox revealedBoardCard(String label, ReadOnlyBoard board) {
         Label title = new Label(label);
         title.getStyleClass().add("board-card-title");
 
@@ -136,9 +136,9 @@ public class GameOverView {
     }
 
     private HBox buildStats() {
-        Board defenderBoard = winner == controller.getPlayer1()
-                ? controller.getPlayer2().getOwnBoard()
-                : controller.getPlayer1().getOwnBoard();
+        ReadOnlyBoard defenderBoard = controller.isFirstPlayer(winner)
+                ? controller.getPlayerBoard(2)
+                : controller.getPlayerBoard(1);
 
         int hits = 0, misses = 0;
         for (int r = 0; r < defenderBoard.getSize(); r++) {

@@ -1,8 +1,7 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
-import com.battleship.controller.LauncherFireResult;
-import com.battleship.controller.ShotResolver;
+import com.battleship.controller.NetworkFireService;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
@@ -298,20 +297,19 @@ public class NetworkBattleView extends AbstractBattleView {
     protected void resolveShot(Coordinate anchor) {
         LauncherType type = me.getSelectedLauncher();
 
-        // V9: the view no longer does ammo bookkeeping on the raw inventory —
-        // it simply tells the domain object the shot happened; the Player owns
-        // its ammo (consume is a no-op for the infinite DEFAULT launcher).
-        me.consumeAmmo(type);
-        me.resetLauncherAfterShot();
+        // Fix 7: all domain mutations (ammo consumption, launcher reset) live in
+        // the controller-owned NetworkFireService — the view only does UI + network I/O.
+        NetworkFireService.NetworkShotOrder order =
+                controller.fireNetworkShot(me, type, anchor, firingOrientation());
 
         if (type == LauncherType.NUCLEAR && !me.hasAmmo(LauncherType.NUCLEAR)) {
             NuclearResupplyDialog.show(nav.getStage(), () -> {
-                me.resupplyAmmo(LauncherType.NUCLEAR, 1);
+                controller.resupplyNuclearAmmo(me);
                 refreshLauncherBar();
             });
         }
 
-        netSession.getSession().send(new NetMessage.Fire(type, anchor, firingOrientation()));
+        netSession.getSession().send(new NetMessage.Fire(order.launcherType(), order.anchor(), order.orientation()));
 
         netSession.beginOpponentTurn();
         turnLabel.setText("AWAITING RESPONSE\u2026");

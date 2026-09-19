@@ -1,6 +1,6 @@
 package com.battleship.view;
 
-import com.battleship.model.Board;
+import com.battleship.model.ReadOnlyBoard;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.Ship;
@@ -98,7 +98,7 @@ public class NetworkGameOverView {
         Label title = new Label("YOUR FLEET");
         title.getStyleClass().add("board-card-title");
 
-        Board board = netSession.getMe().getOwnBoard();
+        ReadOnlyBoard board = netSession.getMe().getOwnBoard();
         BoardGridPane grid = new BoardGridPane(board.getSize());
         for (Ship s : board.getShips()) {
             if (s.isSunk()) grid.renderSunkShip(s); else grid.renderShip(s);

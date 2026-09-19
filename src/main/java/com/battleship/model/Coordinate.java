@@ -1,17 +1,11 @@
 package com.battleship.model;
 
-import java.util.Objects;
-
-/** Immutable algebraic coordinate (e.g. "B5") on a dynamically sized board. */
-public final class Coordinate {
-
-    private final int row;
-    private final int col;
-
-    public Coordinate(int row, int col) {
-        this.row = row;
-        this.col = col;
-    }
+/**
+ * Immutable algebraic coordinate (e.g. "B5") on a dynamically sized board.
+ * A record: compile-time immutability, plus generated equals/hashCode/toString.
+ * The algebraic {@link #toString()} is kept for readable logs and messages.
+ */
+public record Coordinate(int row, int col) {
 
     /** Parses algebraic notation like "A1" or "J10" into a Coordinate (0-indexed internally). */
     public static Coordinate fromAlgebraic(String notation) {
@@ -21,28 +15,16 @@ public final class Coordinate {
         return new Coordinate(row, col);
     }
 
+    /** Backward-compatible accessors (records expose row()/col(); these aliases keep call sites stable). */
+    public int getRow() { return row; }
+    public int getCol() { return col; }
+
     public boolean isWithinBounds(int boardSize) {
         return row >= 0 && row < boardSize && col >= 0 && col < boardSize;
     }
 
-    public int getRow() { return row; }
-    public int getCol() { return col; }
-
     @Override
     public String toString() {
         return String.valueOf((char) ('A' + col)) + (row + 1);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Coordinate)) return false;
-        Coordinate that = (Coordinate) o;
-        return row == that.row && col == that.col;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(row, col);
     }
 }

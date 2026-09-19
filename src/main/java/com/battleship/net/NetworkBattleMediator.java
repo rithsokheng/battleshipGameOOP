@@ -1,6 +1,7 @@
 package com.battleship.net;
 
 import com.battleship.controller.LauncherFireResult;
+import com.battleship.controller.ShotResolution;
 import com.battleship.controller.ShotResolver;
 import com.battleship.model.Player;
 import com.battleship.model.Ship;
@@ -17,10 +18,19 @@ public class NetworkBattleMediator {
 
     private final NetworkGameSession session;
     private final Player me;
+    /** Shot-resolution strategy, injectable for tests (fixes F5). */
+    private final ShotResolution shotResolution;
 
+    /** Production constructor — uses the standard shot resolver. */
     public NetworkBattleMediator(NetworkGameSession session) {
+        this(session, ShotResolver.STANDARD);
+    }
+
+    /** Testable constructor — inject the shot-resolution strategy (DIP, fixes F5). */
+    public NetworkBattleMediator(NetworkGameSession session, ShotResolution shotResolution) {
         this.session = session;
         this.me = session.getMe();
+        this.shotResolution = shotResolution;
     }
 
     public record IncomingFireOutcome(
@@ -34,10 +44,10 @@ public class NetworkBattleMediator {
      * the FireResult reply message across the network session, and returns the outcome.
      */
     public IncomingFireOutcome resolveAndReply(NetMessage.Fire fire) {
-        LauncherFireResult resolution = ShotResolver.resolve(
-                me.getOwnBoard(), fire.launcherType(), fire.anchor(), fire.orientation());
+        LauncherFireResult resolution = shotResolution.resolve(
+                me.getMutableBoard(), fire.launcherType(), fire.anchor(), fire.orientation());
 
-        boolean lost = me.getOwnBoard().isAllShipsSunk();
+        boolean lost = me.getMutableBoard().isAllShipsSunk();
         boolean anyHit = resolution.results().stream().anyMatch(ShotResult::isHit);
         boolean anySunk = !resolution.sunkShips().isEmpty();
 
