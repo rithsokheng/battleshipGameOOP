@@ -72,3 +72,4 @@ Desktop.ini
 *.properties
 !src/main/resources/*.properties
 /.agents/
+target/
