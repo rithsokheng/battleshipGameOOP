@@ -1,6 +1,6 @@
 # Battleship: Naval Command
 
-A modern Java 17 + JavaFX naval warfare game.
+A modern Java 21 + JavaFX naval warfare game.
 
 ## Features
 
@@ -30,9 +30,9 @@ A modern Java 17 + JavaFX naval warfare game.
 - **Admiral (Hard):** Probability density mapping that computes the number of valid remaining ship configurations for every cell, paired with opportunistic area-weapon bombardment and line-following targeting.
 
 ### Audio & Visuals
-- Procedural canvas-rendered ocean waves and radar sweep animations.
+- Procedural canvas-rendered ocean waves, flowing ribbon accents, radar sweep, and compass watermark animations (dedicated `decor/` renderer classes).
 - Fleet health monitor with live per-ship damage progress bars and attack logs.
-- Dual-mode audio system: high-fidelity sound clips with a procedural sound generator fallback.
+- Dual-mode audio system: high-fidelity sound clips with a procedural sound generator fallback, delivered through the swappable `GameAudio` abstraction.
 
 ---
 
@@ -50,11 +50,14 @@ com.battleship
 │   ├── GameMode.java          # Mode selector (AI, Hotseat, etc.)
 │   ├── GameState.java         # Game state machine
 │   ├── LauncherType.java      # Polymorphic weapon types with blast patterns
+│   ├── Orientation.java       # Ship/launcher direction enum (replaces raw booleans)
 │   ├── Player.java            # Participant entity (human or AI)
+│   ├── ReadOnlyBoard.java     # Read-only board interface for views (no mutation)
 │   ├── Ship.java              # Placed ship with idempotent hit tracking
 │   ├── ShipType.java          # Fleet classes (size and traits)
 │   ├── ShotResult.java        # Outcome record (coordinate, outcome, shipSunk)
-│   └── Theater.java           # Battlefield configuration presets
+│   ├── Theater.java           # Battlefield configuration presets
+│   └── Turn.java              # Turn ownership enum (replaces raw int index)
 │
 ├── ai              # AI strategy implementations (no UI dependencies)
 │   ├── AIFactory.java         # Strategy factory
@@ -62,20 +65,29 @@ com.battleship
 │   ├── AiShotPlan.java        # Weapon, anchor, and orientation plan record
 │   ├── Difficulty.java        # Difficulty enum (Ensign, Lieutenant, Admiral)
 │   ├── HuntTargetAI.java      # Normal difficulty: parity hunt + target state machine
+│   ├── ParityHunter.java      # Shared stateless checkerboard parity hunt component
 │   ├── RandomAI.java          # Easy difficulty: random unshot targeting
 │   ├── SmartAI.java           # Hard difficulty: probability density mapping
 │   └── TargetingQueue.java    # Reusable target queue component (composition)
 │
 ├── controller      # Application services & orchestration
-│   ├── GameController.java    # Orchestrates state flow between View and Model
-│   └── LauncherFireResult.java# Shot result and sunk ship container
+│   ├── BattleService.java     # Turn management, launcher selection & firing pipeline
+│   ├── GameController.java    # Thin mediator between views and domain services
+│   ├── LauncherFireResult.java# Shot result and sunk ship container
+│   ├── NetworkFireService.java# Domain mutations of a network shot (ammo, resupply)
+│   ├── PlacementService.java  # Fleet placement legality & auto-deployment
+│   ├── ShotResolution.java    # Resolved multi-cell shot outcome record
+│   └── ShotResolver.java      # Applies launcher blast patterns to the board
 │
 ├── net             # LAN multiplayer networking (TCP sockets)
 │   ├── EnemyTracker.java      # Fog-of-war observer of opponent's board
-│   ├── NetMessage.java        # JSON protocol message
+│   ├── NetMessage.java        # Sealed JSON protocol message hierarchy
+│   ├── NetMessageCodec.java   # Gson wire codec with type discriminator
 │   ├── NetUtil.java           # IP and port discovery utilities
+│   ├── NetworkBattleMediator.java # Controller-level logic for network battles
 │   ├── NetworkGameSession.java# Encapsulated session context
-│   └── NetworkSession.java    # Socket listener/sender with async callbacks
+│   ├── NetworkSession.java    # Socket listener/sender with async callbacks
+│   └── Role.java              # HOST/CLIENT role enum (replaces boolean flag)
 │
 ├── persistence     # Save and load game state (JSON via Gson)
 │   ├── GameSaveDTO.java       # Serializable transfer object
@@ -83,26 +95,41 @@ com.battleship
 │
 └── view            # JavaFX presentation layer
     ├── MainApp.java           # JavaFX Application entry point
+    ├── ViewNavigator.java     # Navigation & audio abstraction (DI seam for views)
     ├── MainMenuView.java      # Title screen and options
     ├── GameModeSelectView.java# Mode selector
     ├── BoardSelectView.java   # Theater selector
-    ├── ShipPlaceView.java     # Drag-and-drop & auto fleet deployment
+    ├── AbstractShipPlaceView.java # Shared deployment logic and UI
+    ├── ShipPlaceView.java     # Drag-and-drop & auto fleet deployment (local modes)
+    ├── NetworkShipPlaceView.java # Network deployment synchronization
     ├── ShipDockPane.java      # Dock tray for unplaced ships
     ├── BoardGridPane.java     # Interactive grid component
-    ├── BattleView.java        # Main combat command center
+    ├── AbstractBattleView.java# Shared combat command center logic and UI
+    ├── LocalBattleView.java   # Main combat view (AI & Hotseat)
+    ├── NetworkBattleView.java # Authoritative peer combat view
     ├── GameOverView.java      # Victory/Defeat screen
+    ├── NetworkGameOverView.java  # Network match outcome screen
     ├── PassScreen.java        # Hotseat turn privacy screen
     ├── MultiplayerLobbyView.java # Host / Join router
     ├── HostLobbyView.java     # QR invite and hosting listener
     ├── JoinLobbyView.java     # Join code input screen
-    ├── NetworkShipPlaceView.java # Network deployment synchronization
-    ├── NetworkBattleView.java # Authoritative peer combat view
-    ├── NetworkGameOverView.java  # Network match outcome screen
-    ├── DecorUtil.java         # Ocean canvas and radar animations
+    ├── GameAudio.java         # Audio abstraction (composes SfxAudio, MusicAudio, AudioSettings)
+    ├── SfxAudio.java          # Sound effects role interface
+    ├── MusicAudio.java        # Background music role interface
+    ├── AudioSettings.java     # Volume/mute settings role interface
+    ├── SilentAudio.java       # No-op audio stub for unit tests
+    ├── SoundManager.java      # BGM and SFX player (GameAudio implementation)
+    ├── SoundGenerator.java    # Procedural audio synthesizer fallback
+    ├── DecorUtil.java         # Facade over the canvas decor renderers
+    ├── decor/                 # Procedural canvas animation renderers
+    │   ├── OceanSceneRenderer.java    # Layered ocean waves and sky gradients
+    │   ├── OceanRibbonRenderer.java   # Flowing ribbon wave accents
+    │   ├── RadarSweepRenderer.java    # Rotating radar sweep animation
+    │   └── CompassWatermark.java      # Decorative compass overlay
+    ├── MenuOverlays.java      # Shared menu overlay effects
+    ├── CssClasses.java        # Centralized CSS style class constants
     ├── ImageResources.java    # Asset cache
     ├── QrCodeUtil.java        # ZXing QR code generator
-    ├── SoundGenerator.java    # Procedural audio synthesizer
-    ├── SoundManager.java      # BGM and SFX player
     └── quiz/                  # Nuclear authorization & resupply minigames
         ├── NuclearLaunchDialog.java
         ├── NuclearResupplyDialog.java
@@ -127,7 +154,7 @@ com.battleship
 ## Prerequisites & Build
 
 ### Requirements
-- **Java 17** or higher
+- **Java 21** or higher
 - **Maven 3.8+**
 
 ### Compile & Run
@@ -147,14 +174,26 @@ mvn clean package
 java -jar target/naval-command-1.0.0.jar
 ```
 
+### Run Tests
+
+```bash
+mvn test
+```
+
+Unit tests (JUnit 5) run headlessly — no JavaFX runtime required — and cover the AI strategies (`ParityHunterTest`), controller services (`BattleServiceTest`, `ShotResolverTest`, `GameControllerDIPTest`), domain model (`TurnTest`), networking (`NetworkGameSessionTest`, `NetworkBattleMediatorTest`), persistence (`SaveGameServiceTest`), and audio abstractions (`SilentAudioTest`).
+
 ---
 
 ## Key OOP Principles Implemented
 
 - **Polymorphism over Conditionals:** `LauncherType` enums implement `getTargetCells(...)` directly, eliminating external switch statement logic.
-- **Composition over Inheritance:** `SmartAI` and `HuntTargetAI` compose independent `TargetingQueue` components rather than sharing deep inheritance trees with shadowed state.
+- **Composition over Inheritance:** `SmartAI` and `HuntTargetAI` compose independent `TargetingQueue` and `ParityHunter` components rather than sharing deep inheritance trees with shadowed state.
 - **Strict Encapsulation & Immutability:** 
   - `Board.getShips()` and `EnemyTracker.getKnownSunkShips()` return unmodifiable collections (`Collections.unmodifiableList`).
   - `Ship` hit tracking uses an internal `Set<Coordinate>` for idempotent hit registration, preventing duplicate counting.
   - `NetworkGameSession` encapsulates networking and state fields behind controlled getters and thread-safe volatile flags.
+- **Read-Only Exposure:** Views query board state through the `ReadOnlyBoard` interface, so cell/ship state can be read but never mutated from the presentation layer.
+- **Interface Segregation & Dependency Inversion:** Views depend on the `ViewNavigator` and `GameAudio` abstractions — the latter composed of the narrow `SfxAudio`, `MusicAudio`, and `AudioSettings` roles — instead of the concrete `MainApp` or the static `SoundManager` singleton. `SilentAudio` serves as a no-op stub injected in tests.
+- **No Primitive Obsession:** Raw flags and indices are replaced with self-documenting enums: `Orientation` (ship/launcher direction), `Turn` (whose turn it is), and `Role` (HOST/CLIENT in network play).
+- **Single Responsibility:** Firing (`BattleService`, `ShotResolver`), placement (`PlacementService`), and network-shot domain logic (`NetworkFireService`, `NetworkBattleMediator`) live in focused services, keeping `GameController` and the views as thin mediators.
 - **Domain Independence:** Model and AI logic execute entirely independently of UI frameworks, making domain logic unit-testable without JavaFX initialization.
