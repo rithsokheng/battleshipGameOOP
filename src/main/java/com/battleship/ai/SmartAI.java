@@ -98,14 +98,9 @@ public class SmartAI implements AIStrategy {
         }
     }
 
+    /** Shared HUNT heuristic (DRY): the parity search lives only in {@link ParityHunter}. */
     private Coordinate fallbackHunt(Board enemyBoard) {
-        List<Coordinate> unshot = enemyBoard.getUnshotCells();
-        List<Coordinate> parity = new ArrayList<>();
-        for (Coordinate c : unshot) {
-            if ((c.getRow() + c.getCol()) % 2 == 0) parity.add(c);
-        }
-        List<Coordinate> pool = parity.isEmpty() ? unshot : parity;
-        return pool.get(random.nextInt(pool.size()));
+        return ParityHunter.pick(enemyBoard, random);
     }
 
     private boolean fits(Board board, int row, int col, int len, Orientation orientation) {

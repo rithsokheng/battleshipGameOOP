@@ -9,8 +9,6 @@ import com.battleship.model.Player;
 import com.battleship.model.ShotResult;
 
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Lieutenant (Normal) difficulty: HUNT/TARGET state machine.
@@ -31,14 +29,8 @@ public class HuntTargetAI implements AIStrategy {
         Coordinate queued = targetQueue.nextTarget(enemyBoard);
         if (queued != null) return queued;
 
-        // HUNT mode: checkerboard parity over unshot cells.
-        List<Coordinate> unshot = enemyBoard.getUnshotCells();
-        List<Coordinate> parity = new ArrayList<>();
-        for (Coordinate c : unshot) {
-            if ((c.getRow() + c.getCol()) % 2 == 0) parity.add(c);
-        }
-        List<Coordinate> pool = parity.isEmpty() ? unshot : parity;
-        return pool.get(random.nextInt(pool.size()));
+        // HUNT mode: checkerboard parity over unshot cells (shared heuristic, DRY).
+        return ParityHunter.pick(enemyBoard, random);
     }
 
     @Override
@@ -62,13 +54,8 @@ public class HuntTargetAI implements AIStrategy {
         if (hunting && firingPlayer.hasAmmo(LauncherType.LEVEL_2)
                 && !firingPlayer.isAmmoInfinite(LauncherType.LEVEL_2)
                 && random.nextInt(4) == 0) {
-            List<Coordinate> unshot = enemyBoard.getUnshotCells();
-            List<Coordinate> parity = new ArrayList<>();
-            for (Coordinate c : unshot) {
-                if ((c.getRow() + c.getCol()) % 2 == 0) parity.add(c);
-            }
-            List<Coordinate> pool = parity.isEmpty() ? unshot : parity;
-            Coordinate anchor = pool.get(random.nextInt(pool.size()));
+            // Same shared HUNT heuristic as chooseTarget — no duplicated parity block.
+            Coordinate anchor = ParityHunter.pick(enemyBoard, random);
             return new AiShotPlan(LauncherType.LEVEL_2, anchor, Orientation.random(random));
         }
         return AIStrategy.super.chooseShotPlan(enemyBoard, firingPlayer);

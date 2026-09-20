@@ -28,9 +28,9 @@ com/battleship/net/NetMessage$Fire.class
 com/battleship/view/quiz/QuizBank.class
 com/battleship/model/Coordinate.class
 com/battleship/persistence/SaveGameService.class
+com/battleship/view/quiz/QuizQuestion.class
 com/battleship/view/MultiplayerLobbyView.class
 com/battleship/view/SoundManager.class
-com/battleship/view/quiz/QuizQuestion.class
 com/battleship/net/NetworkBattleMediator.class
 com/battleship/view/BoardGridPane$1.class
 com/battleship/ai/HuntTargetAI.class
@@ -57,8 +57,8 @@ com/battleship/model/LauncherType.class
 com/battleship/view/decor/OceanRibbonRenderer.class
 com/battleship/view/JoinLobbyView.class
 com/battleship/view/SoundGenerator.class
-com/battleship/view/NetworkBattleView.class
 com/battleship/view/quiz/NuclearResupplyDialog.class
+com/battleship/view/NetworkBattleView.class
 com/battleship/view/AudioSettings.class
 com/battleship/model/GameState.class
 com/battleship/ai/RandomAI.class
