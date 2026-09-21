@@ -1,7 +1,5 @@
 package com.battleship.net;
 
-import javafx.application.Platform;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -11,49 +9,50 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
 /**
  * Thin TCP transport for a single host&lt;-&gt;client connection: one JSON
  * {@link NetMessage} per line. Connection setup and the blocking read loop run
- * on a background daemon thread; every callback is marshalled onto the
- * caller-supplied thread dispatcher (fixes F6). Production callers pass
- * {@code Platform::runLater}; tests pass {@code Runnable::run} so this class
- * is testable without a JavaFX runtime. The overloaded factory methods without
- * a dispatcher argument default to {@link Platform#runLater} for backward
- * compatibility.
+ * on a background daemon thread; every callback is marshalled through the
+ * caller-supplied {@link Executor} (fixes F6 + DIP).
+ *
+ * <p>Fixes the DIP audit finding: this class used to
+ * {@code import javafx.application.Platform} and default to
+ * {@code Platform::runLater}, which welded the transport layer to the JavaFX
+ * toolkit — the class would not even link on a headless server, a CLI client or
+ * a test without JavaFX on the classpath. The dispatcher is now a plain
+ * {@link java.util.concurrent.Executor} injected by the caller: the JavaFX views
+ * pass {@code Platform::runLater}, tests pass {@code Runnable::run}.</p>
  */
 public class NetworkSession {
 
     private final NetMessageCodec codec = new NetMessageCodec();
+    private final Executor dispatcher;
+
     private Socket socket;
     private ServerSocket serverSocket;
     private BufferedReader in;
     private PrintWriter out;
     private volatile boolean running = true;
 
-    /** Marshalls callbacks onto the UI thread; injectable so tests can run inline (fixes F6). */
-    private Consumer<Runnable> threadDispatcher = Platform::runLater;
-
     private Consumer<NetMessage> onMessage;
     private Runnable onDisconnected;
 
-    private NetworkSession() { }
+    private NetworkSession(Executor dispatcher) {
+        this.dispatcher = Objects.requireNonNull(dispatcher, "A thread dispatcher is required.");
+    }
 
     private void dispatch(Runnable action) {
-        threadDispatcher.accept(action);
+        dispatcher.execute(action);
     }
 
     /** Opens a listening socket on {@code port} and waits for exactly one peer to connect. */
-    public static NetworkSession host(int port, Consumer<NetworkSession> onClientConnected, Consumer<Exception> onError) {
-        return host(port, onClientConnected, onError, Platform::runLater);
-    }
-
-    /** Opens a listening socket, dispatching callbacks through the supplied dispatcher (fixes F6). */
     public static NetworkSession host(int port, Consumer<NetworkSession> onClientConnected,
-                                      Consumer<Exception> onError, Consumer<Runnable> threadDispatcher) {
-        NetworkSession session = new NetworkSession();
-        session.threadDispatcher = threadDispatcher;
+                                      Consumer<Exception> onError, Executor dispatcher) {
+        NetworkSession session = new NetworkSession(dispatcher);
         Thread t = new Thread(() -> {
             try {
                 session.serverSocket = new ServerSocket(port);
@@ -70,17 +69,11 @@ public class NetworkSession {
         return session;
     }
 
-    /** Connects out to a host's IP/port. */
-    public static void connect(String host, int port, Consumer<NetworkSession> onConnected, Consumer<Exception> onError) {
-        connect(host, port, onConnected, onError, Platform::runLater);
-    }
-
-    /** Connects out to a host, dispatching callbacks through the supplied dispatcher (fixes F6). */
+    /** Connects out to a host's IP/port, dispatching callbacks through the supplied executor. */
     public static void connect(String host, int port, Consumer<NetworkSession> onConnected,
-                               Consumer<Exception> onError, Consumer<Runnable> threadDispatcher) {
+                               Consumer<Exception> onError, Executor dispatcher) {
         Thread t = new Thread(() -> {
-            NetworkSession session = new NetworkSession();
-            session.threadDispatcher = threadDispatcher;
+            NetworkSession session = new NetworkSession(dispatcher);
             try {
                 Socket socket = new Socket();
                 socket.connect(new InetSocketAddress(host, port), 8000);

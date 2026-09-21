@@ -1,19 +1,32 @@
 package com.battleship.controller;
 
-import com.battleship.ai.AiShotPlan;
-import com.battleship.ai.AIStrategy;
+import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
-import com.battleship.model.LauncherType;
+import com.battleship.model.Orientation;
 import com.battleship.model.Player;
+import com.battleship.model.ShotOrder;
 import com.battleship.model.ShotResult;
 import com.battleship.model.Turn;
+import com.battleship.model.fog.MarkerStatus;
+import com.battleship.model.fog.TrackingGrid;
+import com.battleship.model.projection.ShipSnapshot;
+import com.battleship.model.weapon.Weapon;
 
 import java.security.SecureRandom;
-import java.util.List;
 
 /**
- * Encapsulates turn management, launcher selection and the firing pipeline.
+ * Encapsulates turn management, weapon selection and the firing pipeline.
  * Extracted from GameController so the controller can stay a thin mediator (SRP).
+ *
+ * <p>Two architectural fixes:</p>
+ * <ul>
+ *   <li>The AI branch {@code if (aiStrategy != null && attacker == player2)} is gone:
+ *       whoever holds the turn is asked for a {@link ShotOrder} through the
+ *       polymorphic {@link Player#decideAutonomousShot()} (V2.2).</li>
+ *   <li>Every shot updates the <em>shooter's</em> {@link TrackingGrid} — the only
+ *       fog-of-war model in the game — instead of the shooter reading the
+ *       defender's grid (V1.3 / Smell 5.2).</li>
+ * </ul>
  */
 public class BattleService {
 
@@ -24,7 +37,6 @@ public class BattleService {
 
     private Player player1;
     private Player player2;
-    private AIStrategy aiStrategy;   // null in hotseat mode
     private Turn currentTurn;
 
     /** True only between a fire() that ended the match and the controller reacting to it. */
@@ -40,10 +52,9 @@ public class BattleService {
         this.shotResolution = shotResolution;
     }
 
-    public void init(Player player1, Player player2, AIStrategy aiStrategy) {
+    public void init(Player player1, Player player2) {
         this.player1 = player1;
         this.player2 = player2;
-        this.aiStrategy = aiStrategy;
         this.currentTurn = Turn.PLAYER_1;
         this.battleOver = false;
     }
@@ -57,49 +68,47 @@ public class BattleService {
     public Player getCurrentPlayer() { return currentTurn == Turn.PLAYER_1 ? player1 : player2; }
     public Player getOpponent() { return currentTurn == Turn.PLAYER_1 ? player2 : player1; }
 
+    /** True when the player holding the turn acts on its own (no UI click expected). */
     public boolean isAiTurn() {
-        return aiStrategy != null && getCurrentPlayer() == player2;
+        return getCurrentPlayer().isAutonomous();
     }
 
-    public boolean selectLauncher(Player player, LauncherType type, int boardSize) {
-        return player.selectLauncher(type, boardSize);
+    public boolean selectWeapon(Player player, Weapon weapon) {
+        return player.selectWeapon(weapon);
     }
 
     public void toggleOrientation(Player player) {
-        player.toggleLauncherOrientation();
+        player.toggleWeaponOrientation();
     }
 
-    public int getAmmoRemaining(Player player, LauncherType type) {
-        return player.getAmmoCount(type);
+    public int getAmmoRemaining(Player player, Weapon weapon) {
+        return player.ammoCount(weapon);
     }
 
     /**
-     * Fires the current player's selected launcher, anchored at the given cell.
+     * Fires the current player's selected weapon, anchored at the given cell.
      * The pattern resolution is delegated to the shared {@link ShotResolver};
-     * this method owns only the turn-level concerns: ammo consumption, launcher
-     * reset, AI feedback and turn advancement (unless the defender just lost).
+     * this method owns only the turn-level concerns: knowledge bookkeeping,
+     * ammo consumption, weapon reset, shooter feedback and turn advancement
+     * (unless the defender just lost).
      */
     public LauncherFireResult fire(Coordinate anchor) {
         battleOver = false;
         Player attacker = getCurrentPlayer();
         Player defender = getOpponent();
-        LauncherType type = attacker.getSelectedLauncher();
+        Weapon weapon = attacker.selectedWeapon();
 
         LauncherFireResult result = shotResolution.resolve(
-                defender.getMutableBoard(),
-                type,
-                anchor,
-                attacker.getLauncherOrientation());
+                defender, weapon, anchor, attacker.weaponOrientation());
 
-        attacker.consumeAmmo(type);          // DEFAULT is infinite -> no-op
-        attacker.resetLauncherAfterShot();   // must actively re-select each turn (rule 1)
-
-        // The AI brain learns from its own shots only (polymorphic notification).
-        if (aiStrategy != null && attacker == player2) {
-            for (ShotResult r : result.results()) aiStrategy.notifyResult(r);
+        recordObservedOutcome(attacker, result);
+        attacker.consumeAmmo(weapon);          // infinite weapons: no-op
+        attacker.resetWeaponAfterShot();       // must actively re-select each turn (rule 1)
+        for (ShotResult shot : result.results()) {
+            attacker.observeOwnShot(shot);     // polymorphic: only a machine learns
         }
 
-        if (defender.hasLost()) {
+        if (defender.isFleetDestroyed()) {
             battleOver = true; // turn stays with the winner for game-over reporting
         } else {
             currentTurn = currentTurn.next();
@@ -107,11 +116,32 @@ public class BattleService {
         return result;
     }
 
-    /** Has the AI choose a weapon + target, applies the selection, and fires it. */
+    /** Has the current player choose a weapon + target on its own, then fires it. */
     public LauncherFireResult fireAiLauncher() {
-        AiShotPlan plan = aiStrategy.chooseShotPlan(player1.getMutableBoard(), player2);
-        player2.prepareShot(plan.type(), plan.orientation());
-        return fire(plan.anchor());
+        Player attacker = getCurrentPlayer();
+        ShotOrder order = attacker.decideAutonomousShot().orElseThrow(() ->
+                new IllegalStateException(attacker.name() + " needs a human to choose a shot."));
+        attacker.armWeapon(order.weapon(), order.orientation());
+        return fire(order.anchor());
+    }
+
+    /** Copies everything the shooter just observed into their own knowledge grid. */
+    private void recordObservedOutcome(Player attacker, LauncherFireResult result) {
+        TrackingGrid knowledge = attacker.trackingGrid();
+        for (ShotResult shot : result.results()) {
+            knowledge.recordShotOutcome(shot.coordinate(), markerFor(shot.outcome()));
+        }
+        for (ShipSnapshot sunk : result.sunkShips()) {
+            knowledge.recordWreck(sunk.type(), sunk.cells());
+        }
+    }
+
+    private static MarkerStatus markerFor(CellStatus outcome) {
+        return switch (outcome) {
+            case HIT -> MarkerStatus.HIT;
+            case SUNK -> MarkerStatus.SUNK;
+            default -> MarkerStatus.MISS;
+        };
     }
 
     public boolean isBattleOver() { return battleOver; }

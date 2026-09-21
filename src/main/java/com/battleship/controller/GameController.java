@@ -1,19 +1,27 @@
 package com.battleship.controller;
 
 import com.battleship.ai.AIFactory;
-import com.battleship.model.Board;
 import com.battleship.model.Coordinate;
+import com.battleship.model.FleetReadout;
 import com.battleship.model.GameMode;
 import com.battleship.model.GameState;
-import com.battleship.model.LauncherType;
+import com.battleship.model.HumanPlayer;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
-import com.battleship.model.ReadOnlyBoard;
-import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 import com.battleship.model.Theater;
 import com.battleship.model.Turn;
+import com.battleship.model.fog.TrackingGrid;
+import com.battleship.model.projection.ShipSnapshot;
+import com.battleship.model.weapon.Weapon;
+import com.battleship.persistence.GameSaveDTO;
+import com.battleship.persistence.SaveGameService;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -22,25 +30,33 @@ import java.util.function.Consumer;
  * (menu -> mode select -> board select -> ship placement -> battle -> game over)
  * and mediates between View and Model via callbacks.
  *
- * It is deliberately a thin mediator (SRP): all placement logic lives in
+ * <p>It is deliberately a thin mediator (SRP): all placement logic lives in
  * {@link PlacementService}, all turn/firing logic in {@link BattleService}.
+ * Views never receive mutable domain objects — they get player names, fleet
+ * read-outs and tracking grids.</p>
  */
 public class GameController {
 
     private final PlacementService placementService;
     private final BattleService battleService;
     private final NetworkFireService networkFireService;
+    private final SaveGameService saveGameService;
 
     /** Testable constructor — inject services (DIP). */
-    public GameController(PlacementService placementService, BattleService battleService) {
+    public GameController(PlacementService placementService, BattleService battleService, SaveGameService saveGameService) {
         this.placementService = placementService;
         this.battleService = battleService;
         this.networkFireService = new NetworkFireService();
+        this.saveGameService = saveGameService;
+    }
+
+    public GameController(PlacementService placementService, BattleService battleService) {
+        this(placementService, battleService, new SaveGameService());
     }
 
     /** Production convenience constructor. */
     public GameController() {
-        this(new PlacementService(), new BattleService());
+        this(new PlacementService(), new BattleService(), new SaveGameService());
     }
 
     private GameMode selectedMode;
@@ -68,19 +84,17 @@ public class GameController {
     }
 
     private void initializeGame() {
-        int size = selectedTheater.getBoardSize();
+        // Polymorphic players replace the old isHuman boolean (V2.2): the mode
+        // decides which subclass is instantiated, not a flag inside one class.
         boolean hotseat = selectedMode == GameMode.HOTSEAT;
+        player1 = new HumanPlayer("Admiral (You)", selectedTheater);
+        player2 = hotseat
+                ? new HumanPlayer("Admiral 2", selectedTheater)
+                : new com.battleship.model.AiPlayer("Enemy AI", selectedTheater, AIFactory.create(selectedMode));
 
-        player1 = new Player("Admiral (You)", true, new Board(size));
-        player2 = new Player(hotseat ? "Admiral 2" : "Enemy AI", hotseat, new Board(size));
-
-        player1.initLauncherAmmo(size);
-        player2.initLauncherAmmo(size);
-
-        battleService.init(player1, player2, hotseat ? null : AIFactory.create(selectedMode));
+        battleService.init(player1, player2);
         placingTurn = Turn.PLAYER_1;
     }
-
 
     // ---------- Flow: Ship placement (delegates to PlacementService) ----------
 
@@ -88,40 +102,35 @@ public class GameController {
         return placingTurn == Turn.PLAYER_1 ? player1 : player2;
     }
 
-    /** Ship types still needed for the placing player, keyed by type, with remaining count. */
+    /** Ship types still needed for the player, keyed by type, with remaining count. */
     public Map<ShipType, Integer> getRemainingShipCounts(Player player) {
         return placementService.getRemainingShipCounts(player, selectedTheater);
     }
 
     public boolean placeShip(Player player, ShipType type, Coordinate start, Orientation orientation) {
-        return placementService.placeShip(player, selectedTheater, type, start, orientation);
+        return placementService.deploy(player, selectedTheater, type, start, orientation);
     }
 
     public boolean canPlace(Player player, ShipType type, Coordinate start, Orientation orientation) {
-        return placementService.canPlace(player, type, start, orientation);
+        return placementService.canDeploy(player, type, start, orientation);
     }
 
-    /** Pulls an already-placed ship back off the board and into the dock ("put out"). */
-    public boolean removeShip(Player player, Ship ship) {
-        return placementService.removeShip(player, ship);
-    }
-
-    /** Pulls an already-placed ship at the given coordinate back off the board and into the dock. */
+    /** Pulls an already-deployed ship at the given coordinate back into the dock ("put back"). */
     public boolean removeShipAt(Player player, Coordinate c) {
-        return placementService.removeShipAt(player, c);
+        return placementService.undeployAt(player, c);
     }
 
     public boolean isPlacementComplete(Player player) {
-        return placementService.isPlacementComplete(player, selectedTheater);
+        return placementService.isDeploymentComplete(player, selectedTheater);
     }
 
     public void resetPlacement(Player player) {
-        placementService.resetPlacement(player);
+        placementService.resetDeployment(player);
     }
 
-    /** Randomly places all remaining ships for the player (spec 4.2, retry until success). */
+    /** Randomly deploys all remaining ships for the player (spec 4.2, retry until success). */
     public void autoPlaceRemaining(Player player) {
-        placementService.autoPlaceAll(player, selectedTheater);
+        placementService.autoDeployAll(player, selectedTheater);
     }
 
     /** Called when the placing player hits READY. Advances placement or starts battle. */
@@ -134,7 +143,7 @@ public class GameController {
                 startBattle();
             }
         } else {
-            // vs AI: auto-place the AI's fleet, then start battle.
+            // vs AI: auto-deploy the AI's fleet, then start battle.
             autoPlaceRemaining(player2);
             startBattle();
         }
@@ -160,20 +169,20 @@ public class GameController {
         return selectedMode != GameMode.HOTSEAT && battleService.isAiTurn();
     }
 
-    public boolean selectLauncher(Player player, LauncherType type) {
-        return battleService.selectLauncher(player, type, selectedTheater.getBoardSize());
+    public boolean selectWeapon(Player player, Weapon weapon) {
+        return battleService.selectWeapon(player, weapon);
     }
 
-    public void toggleLauncherOrientation(Player player) {
+    public void toggleWeaponOrientation(Player player) {
         battleService.toggleOrientation(player);
     }
 
-    public int getAmmoRemaining(Player player, LauncherType type) {
-        return battleService.getAmmoRemaining(player, type);
+    public int getAmmoRemaining(Player player, Weapon weapon) {
+        return battleService.getAmmoRemaining(player, weapon);
     }
 
     /**
-     * Fires the current player's selected launcher, anchored at the given cell.
+     * Fires the current player's selected weapon, anchored at the given cell.
      * Delegates to the BattleService; reacts to game-over if the shot ended the match.
      */
     public LauncherFireResult fireLauncher(Coordinate anchor) {
@@ -182,7 +191,7 @@ public class GameController {
         return fireResult;
     }
 
-    /** Has the AI choose a weapon + target, applies the selection, and fires it. */
+    /** Has the current (machine) player choose a weapon + target, then fires it. */
     public LauncherFireResult fireAiLauncher() {
         LauncherFireResult fireResult = battleService.fireAiLauncher();
         reactToBattleEnd();
@@ -218,16 +227,21 @@ public class GameController {
     public GameMode getSelectedMode() { return selectedMode; }
     public Theater getSelectedTheater() { return selectedTheater; }
 
-    // ---------- Read-only player queries (fixes F2: views never receive mutable Players) ----------
+    // ---------- Read-only player queries (fixes F2: views never receive mutable domain objects) ----------
 
     /** Name of player 1 or 2 (1-indexed). */
     public String getPlayerName(int index) {
-        return index == 1 ? player1.getName() : player2.getName();
+        return index == 1 ? player1.name() : player2.name();
     }
 
-    /** Read-only view of player 1 or 2's board (1-indexed). */
-    public ReadOnlyBoard getPlayerBoard(int index) {
-        return index == 1 ? player1.getOwnBoard() : player2.getOwnBoard();
+    /** Read-only fleet projection of player 1 or 2 (1-indexed). */
+    public FleetReadout getPlayerFleet(int index) {
+        return index == 1 ? player1 : player2;
+    }
+
+    /** The knowledge grid of player 1 or 2 (1-indexed) — the only enemy model a view may read. */
+    public TrackingGrid getTrackingGrid(int index) {
+        return index == 1 ? player1.trackingGrid() : player2.trackingGrid();
     }
 
     /** Identity check for game-over reporting: is the given player player 1? */
@@ -239,16 +253,70 @@ public class GameController {
 
     /**
      * Applies the domain bookkeeping for a network shot (ammo consumption,
-     * launcher reset) and returns the order to transmit over the wire.
+     * weapon reset) and returns the order to transmit over the wire.
      */
-    public NetworkFireService.NetworkShotOrder fireNetworkShot(Player shooter, LauncherType type,
+    public NetworkFireService.NetworkShotOrder fireNetworkShot(Player shooter, Weapon weapon,
                                                                Coordinate anchor, Orientation orientation) {
-        return networkFireService.fireNetworkShot(shooter, type, anchor, orientation);
+        return networkFireService.fireNetworkShot(shooter, weapon, anchor, orientation);
     }
 
     /** Tops the shooter's nuclear ammo back up after a successful quiz resupply. */
     public void resupplyNuclearAmmo(Player shooter) {
         networkFireService.resupplyNuclear(shooter);
+    }
+
+    // ---------- Persistence (Smell 5.3: connects SaveGameService to controller) ----------
+
+    /**
+     * Serializes the current match state and writes it to a timestamped JSON file.
+     *
+     * @param directory the folder to save into
+     * @return the saved file's path
+     * @throws IOException if disk write fails
+     */
+    public Path saveGame(Path directory) throws IOException {
+        if (player1 == null || player2 == null) {
+            throw new IllegalStateException("Cannot save a game that has not been initialized.");
+        }
+        int size = selectedTheater != null ? selectedTheater.getBoardSize() : player1.size();
+
+        GameSaveDTO.PlayerDTO p1Dto = toPlayerDTO(player1, size);
+        GameSaveDTO.PlayerDTO p2Dto = toPlayerDTO(player2, size);
+
+        int currentIndex = (battleService.getCurrentPlayer() == player1) ? 1 : 2;
+
+        GameSaveDTO dto = GameSaveDTO.builder()
+                .version("1.0.0")
+                .timestamp(Instant.now().toString())
+                .boardSize(size)
+                .gameState(state != null ? state.name() : "BATTLE")
+                .player1(p1Dto)
+                .player2(p2Dto)
+                .currentPlayerIndex(currentIndex)
+                .turnHistory(List.of())
+                .build();
+
+        return saveGameService.save(dto, directory);
+    }
+
+    /** Loads a previously saved game DTO from disk. */
+    public GameSaveDTO loadGame(Path file) throws IOException {
+        return saveGameService.load(file);
+    }
+
+    private GameSaveDTO.PlayerDTO toPlayerDTO(Player player, int size) {
+        String[][] board = new String[size][size];
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                board[r][c] = player.cellStatus(new Coordinate(r, c)).name();
+            }
+        }
+        List<GameSaveDTO.ShipDTO> ships = new ArrayList<>();
+        for (ShipSnapshot s : player.fleet()) {
+            List<String> coords = s.cells().stream().map(Coordinate::toString).toList();
+            ships.add(new GameSaveDTO.ShipDTO(s.type().name(), s.hitCount(), coords));
+        }
+        return new GameSaveDTO.PlayerDTO(player.name(), player.isHuman(), board, ships);
     }
 
     // ---------- Mutable access (package-private; controller-internal/tests only — fixes F2) ----------

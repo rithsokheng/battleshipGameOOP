@@ -2,6 +2,7 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.model.Board;
+import com.battleship.model.HumanPlayer;
 import com.battleship.model.Player;
 import com.battleship.model.Theater;
 import com.battleship.net.EnemyTracker;
@@ -9,6 +10,7 @@ import com.battleship.net.NetMessage;
 import com.battleship.net.NetworkGameSession;
 import com.battleship.net.NetworkSession;
 import com.battleship.net.Role;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -100,6 +102,8 @@ public class JoinLobbyView {
                     session.send(new NetMessage.Hello(code));
                 },
                 error -> showError("Couldn't connect: " + error.getMessage()));
+                error -> showError("Couldn't connect: " + error.getMessage()),
+                Platform::runLater);
     }
 
     private void handleWelcome(NetworkSession session, NetMessage msg) {
@@ -116,8 +120,10 @@ public class JoinLobbyView {
 
         Player me = new Player("You", true, new Board(size));
         me.initLauncherAmmo(size);
+        Player me = new HumanPlayer("You", theater);
         NetworkGameSession netSession = new NetworkGameSession(
                 session, theater, Role.CLIENT, me, new EnemyTracker(size));
+                session, theater, Role.CLIENT, me);
 
         nav.showNetworkShipPlacement(netSession);
     }

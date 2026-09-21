@@ -1,8 +1,7 @@
 package com.battleship.ai;
 
-import com.battleship.model.Board;
-import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
+import com.battleship.model.fog.TrackingGrid;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -11,6 +10,9 @@ import java.util.Deque;
  * Encapsulates the target-following queue used by Hunt/Target AI strategies.
  * Once a hit is registered, orthogonal neighbors are enqueued so the AI
  * "follows the line" on subsequent turns.
+ *
+ * <p>Validity is checked against the attacker's {@link TrackingGrid}, so the queue
+ * never needs (and never gets) the defender's real board.</p>
  */
 public class TargetingQueue {
 
@@ -25,13 +27,10 @@ public class TargetingQueue {
      * Returns the next valid (unshot) target from the queue, or null if the
      * queue is exhausted (all queued cells have already been shot).
      */
-    public Coordinate nextTarget(Board enemyBoard) {
+    public Coordinate nextTarget(TrackingGrid knowledge) {
         while (!queue.isEmpty()) {
             Coordinate c = queue.poll();
-            CellStatus status = enemyBoard.getCellStatus(c);
-            if (status == CellStatus.EMPTY || status == CellStatus.SHIP) {
-                return c;
-            }
+            if (!knowledge.isAlreadyShelled(c)) return c;
         }
         return null;
     }
@@ -55,4 +54,3 @@ public class TargetingQueue {
         queue.clear();
     }
 }
-

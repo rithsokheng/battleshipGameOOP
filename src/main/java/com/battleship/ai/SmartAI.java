@@ -1,14 +1,17 @@
 package com.battleship.ai;
 
-import com.battleship.model.Board;
+import com.battleship.model.AmmoReadout;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
-import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
-import com.battleship.model.Player;
-import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
+import com.battleship.model.ShotOrder;
 import com.battleship.model.ShotResult;
+import com.battleship.model.fog.MarkerStatus;
+import com.battleship.model.fog.TrackingGrid;
+import com.battleship.model.weapon.BlastPattern;
+import com.battleship.model.weapon.Weapon;
+import com.battleship.model.weapon.WeaponCatalog;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -21,7 +24,9 @@ import java.util.List;
  * behavior right after a hit, since that's more precise than pure probability
  * once a ship has been found.
  *
- * Uses composition (TargetingQueue) instead of inheriting from HuntTargetAI.
+ * <p>Fixes V1.3: the density map is built from the {@link TrackingGrid} — the
+ * roster minus announced wrecks — instead of peeking at the defender's live
+ * fleet. Uses composition (TargetingQueue) instead of inheriting from HuntTargetAI.</p>
  */
 public class SmartAI implements AIStrategy {
 
@@ -30,35 +35,32 @@ public class SmartAI implements AIStrategy {
     private int lastBoardSize = -1;
 
     @Override
-    public Coordinate chooseTarget(Board enemyBoard) {
-        lastBoardSize = enemyBoard.getSize();
+    public Coordinate chooseTarget(TrackingGrid knowledge) {
+        lastBoardSize = knowledge.size();
 
         // If we're actively finishing off a located ship, defer to the queue.
-        Coordinate queued = targetQueue.nextTarget(enemyBoard);
+        Coordinate queued = targetQueue.nextTarget(knowledge);
         if (queued != null) return queued;
 
-        int size = enemyBoard.getSize();
+        int size = knowledge.size();
         int[][] density = new int[size][size];
-        List<ShipType> remaining = new ArrayList<>();
-        for (Ship s : enemyBoard.getShips()) {
-            if (!s.isSunk()) remaining.add(s.getType());
-        }
+        List<ShipType> remaining = knowledge.remainingShipPool();
         if (remaining.isEmpty()) {
-            return fallbackHunt(enemyBoard);
+            return ParityHunter.pick(knowledge, random);
         }
 
         for (ShipType type : remaining) {
             int len = type.getSize();
             for (int r = 0; r < size; r++) {
                 for (int c = 0; c <= size - len; c++) {
-                    if (fits(enemyBoard, r, c, len, Orientation.HORIZONTAL)) {
+                    if (fits(knowledge, r, c, len, Orientation.HORIZONTAL)) {
                         for (int i = 0; i < len; i++) density[r][c + i]++;
                     }
                 }
             }
             for (int c = 0; c < size; c++) {
                 for (int r = 0; r <= size - len; r++) {
-                    if (fits(enemyBoard, r, c, len, Orientation.VERTICAL)) {
+                    if (fits(knowledge, r, c, len, Orientation.VERTICAL)) {
                         for (int i = 0; i < len; i++) density[r + i][c]++;
                     }
                 }
@@ -70,8 +72,7 @@ public class SmartAI implements AIStrategy {
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 Coordinate coord = new Coordinate(r, c);
-                CellStatus status = enemyBoard.getCellStatus(coord);
-                if (status != CellStatus.EMPTY && status != CellStatus.SHIP) continue;
+                if (knowledge.isAlreadyShelled(coord)) continue; // can't fire twice
                 if (density[r][c] > best) {
                     best = density[r][c];
                     bestCells.clear();
@@ -82,7 +83,7 @@ public class SmartAI implements AIStrategy {
             }
         }
 
-        if (bestCells.isEmpty()) return fallbackHunt(enemyBoard);
+        if (bestCells.isEmpty()) return ParityHunter.pick(knowledge, random);
         return bestCells.get(random.nextInt(bestCells.size()));
     }
 
@@ -93,75 +94,63 @@ public class SmartAI implements AIStrategy {
             targetQueue.clear();
             return;
         }
-        if (lastBoardSize > 0) {
-            targetQueue.enqueueNeighbors(result.coordinate(), lastBoardSize);
-        }
+        targetQueue.enqueueNeighbors(result.coordinate(), lastBoardSize);
     }
 
-    /** Shared HUNT heuristic (DRY): the parity search lives only in {@link ParityHunter}. */
-    private Coordinate fallbackHunt(Board enemyBoard) {
-        return ParityHunter.pick(enemyBoard, random);
-    }
-
-    private boolean fits(Board board, int row, int col, int len, Orientation orientation) {
+    /** A cell that is known empty (MISS) or confirmed wreckage cannot host a living hull. */
+    private boolean fits(TrackingGrid knowledge, int row, int col, int len, Orientation orientation) {
         for (int i = 0; i < len; i++) {
             int r = orientation.isHorizontal() ? row : row + i;
             int c = orientation.isHorizontal() ? col + i : col;
-            CellStatus status = board.getCellStatus(new Coordinate(r, c));
-            // A cell already known as MISS or SUNK cannot host a live ship.
-            if (status == CellStatus.MISS || status == CellStatus.SUNK) return false;
+            MarkerStatus marker = knowledge.observedStatus(new Coordinate(r, c));
+            if (marker == MarkerStatus.MISS || marker == MarkerStatus.SUNK) return false;
         }
         return true;
     }
 
     /**
-     * Admiral AI spends its limited-ammo launchers deliberately: it looks for
-     * the 2x3 (Nuclear) or 1x3 (Level 2) block with the most still-unshot cells
-     * and only fires it if that block is mostly "fresh" — otherwise it saves
-     * the ammo and falls back to a precise single Default shot.
+     * Admiral AI spends its limited-ammo weapons deliberately: it looks for the
+     * blast block containing the most still-unshot cells and only fires it if that
+     * block is mostly "fresh" — otherwise it saves the ammo and falls back to a
+     * precise single standard shot.
      */
     @Override
-    public AiShotPlan chooseShotPlan(Board enemyBoard, Player firingPlayer) {
+    public ShotOrder chooseShotPlan(TrackingGrid knowledge, AmmoReadout ammo) {
         if (targetQueue.hasTargets()) {
-            return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), Orientation.HORIZONTAL);
+            return new ShotOrder(WeaponCatalog.standard(), chooseTarget(knowledge), Orientation.HORIZONTAL);
         }
 
-        int size = enemyBoard.getSize();
-        if (firingPlayer.hasAmmo(LauncherType.NUCLEAR)
-                && !firingPlayer.isAmmoInfinite(LauncherType.NUCLEAR) && size >= 10) {
-            AiShotPlan plan = bestBlock(enemyBoard, LauncherType.NUCLEAR);
+        int size = knowledge.size();
+        Weapon nuclear = WeaponCatalog.nuclear();
+        if (ammo.hasAmmo(nuclear) && !ammo.isAmmoInfinite(nuclear) && size >= 10) {
+            ShotOrder plan = bestBlock(knowledge, nuclear);
             if (plan != null) return plan;
         }
-        if (firingPlayer.hasAmmo(LauncherType.LEVEL_2)
-                && !firingPlayer.isAmmoInfinite(LauncherType.LEVEL_2) && size >= 8) {
-            AiShotPlan plan = bestBlock(enemyBoard, LauncherType.LEVEL_2);
+        Weapon salvo = WeaponCatalog.salvo();
+        if (ammo.hasAmmo(salvo) && !ammo.isAmmoInfinite(salvo) && size >= 8) {
+            ShotOrder plan = bestBlock(knowledge, salvo);
             if (plan != null) return plan;
         }
-        return new AiShotPlan(LauncherType.DEFAULT, chooseTarget(enemyBoard), Orientation.HORIZONTAL);
+        return new ShotOrder(WeaponCatalog.standard(), chooseTarget(knowledge), Orientation.HORIZONTAL);
     }
 
     /** Finds the best-scoring placement for an area weapon; null if not worth the ammo. */
-    private AiShotPlan bestBlock(Board board, LauncherType type) {
-        int size = board.getSize();
-        // Ask the launcher type for its own blast-block dimensions (OCP-safe):
-        // no hardcoded per-type dims here.
-        int[][] dims = type.patternDimensions();
+    private ShotOrder bestBlock(TrackingGrid knowledge, Weapon weapon) {
+        int size = knowledge.size();
+        // Ask the weapon for its own blast geometry (OCP-safe): no hardcoded dims here.
+        BlastPattern pattern = weapon.blastPattern();
 
         int bestScore = -1;
         Coordinate bestAnchor = null;
         Orientation bestOrientation = Orientation.HORIZONTAL;
 
-        for (int[] dim : dims) {
-            int rows = dim[0], cols = dim[1];
-            Orientation orientation = rows <= cols ? Orientation.HORIZONTAL : Orientation.VERTICAL;
-            for (int r = 0; r <= size - rows; r++) {
-                for (int c = 0; c <= size - cols; c++) {
+        for (Orientation orientation : Orientation.values()) {
+            BlastPattern laid = pattern.rotatedTo(orientation);
+            for (int r = 0; r <= size - laid.rows(); r++) {
+                for (int c = 0; c <= size - laid.cols(); c++) {
                     int score = 0;
-                    for (int dr = 0; dr < rows; dr++) {
-                        for (int dc = 0; dc < cols; dc++) {
-                            CellStatus s = board.getCellStatus(new Coordinate(r + dr, c + dc));
-                            if (s == CellStatus.EMPTY || s == CellStatus.SHIP) score++;
-                        }
+                    for (Coordinate cell : laid.coverage(new Coordinate(r, c), orientation)) {
+                        if (!knowledge.isAlreadyShelled(cell)) score++;
                     }
                     if (score > bestScore) {
                         bestScore = score;
@@ -172,9 +161,9 @@ public class SmartAI implements AIStrategy {
             }
         }
 
-        int totalCells = type.getCellCount();
+        int totalCells = pattern.cellCount();
         // Only worth the ammo if at least half the covered cells are still unshot.
         if (bestAnchor == null || bestScore < (totalCells / 2 + 1)) return null;
-        return new AiShotPlan(type, bestAnchor, bestOrientation);
+        return new ShotOrder(weapon, bestAnchor, bestOrientation);
     }
 }

@@ -13,8 +13,11 @@ import com.battleship.net.NetworkGameSession;
  * The {@link #getAudio()} accessor lets views play sounds through the
  * {@link GameAudio} abstraction instead of the static {@code SoundManager}
  * singleton.</p>
+ * By extending {@link AudioProvider} and {@link WindowProvider}, the navigator
+ * also satisfies segregated clients that only need sound playback or a dialog owner window.</p>
  */
 public interface ViewNavigator {
+public interface ViewNavigator extends AudioProvider, WindowProvider {
 
     // ---------- Local (vs AI / hotseat) flow ----------
 
@@ -41,4 +44,14 @@ public interface ViewNavigator {
 
     /** Game audio facade, so views never touch the concrete sound manager. */
     GameAudio getAudio();
+
+    @Override
+    default GameAudio audio() {
+        return getAudio();
+    }
+
+    @Override
+    default javafx.stage.Window window() {
+        return getStage();
+    }
 }

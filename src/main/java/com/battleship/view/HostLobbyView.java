@@ -2,6 +2,7 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.model.Board;
+import com.battleship.model.HumanPlayer;
 import com.battleship.model.Player;
 import com.battleship.model.Theater;
 import com.battleship.net.EnemyTracker;
@@ -10,6 +11,7 @@ import com.battleship.net.NetUtil;
 import com.battleship.net.NetworkGameSession;
 import com.battleship.net.NetworkSession;
 import com.battleship.net.Role;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -112,6 +114,8 @@ public class HostLobbyView {
                     alert.setContentText("Couldn't start hosting: " + error.getMessage());
                     alert.showAndWait();
                 });
+                },
+                Platform::runLater);
     }
 
     private void handleHandshakeMessage(NetworkSession session, NetMessage msg, Label status) {
@@ -131,8 +135,10 @@ public class HostLobbyView {
         int size = theater.getBoardSize();
         Player me = new Player("You (Host)", true, new Board(size));
         me.initLauncherAmmo(size);
+        Player me = new HumanPlayer("You (Host)", theater);
         NetworkGameSession netSession = new NetworkGameSession(
                 session, theater, Role.HOST, me, new EnemyTracker(size));
+                session, theater, Role.HOST, me);
 
         nav.showNetworkShipPlacement(netSession);
     }

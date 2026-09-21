@@ -1,35 +1,36 @@
 package com.battleship.controller;
 
 import com.battleship.model.Coordinate;
-import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
+import com.battleship.model.weapon.Weapon;
+import com.battleship.model.weapon.WeaponCatalog;
 
 /**
  * Owns the domain mutations of a network shot (fixes F7 — Feature Envy in
- * {@code NetworkBattleView.resolveShot}): ammo consumption, launcher reset
+ * {@code NetworkBattleView.resolveShot}): ammo consumption, weapon reset
  * and the quiz-gated nuclear resupply. The view keeps only UI and network
  * I/O responsibilities.
  */
 public class NetworkFireService {
 
     /** Everything the attacker's client must transmit after a shot. */
-    public record NetworkShotOrder(LauncherType launcherType, Coordinate anchor, Orientation orientation) {}
+    public record NetworkShotOrder(Weapon weapon, Coordinate anchor, Orientation orientation) {}
 
     /**
      * Applies the shot's domain bookkeeping to the shooter (consume ammo,
-     * reset launcher per rule 1) and returns the order to send over the wire.
-     * Consume is a no-op for the infinite DEFAULT launcher.
+     * reset the weapon per rule 1) and returns the order to send over the wire.
+     * Consume is a no-op for the infinite standard shell.
      */
-    public NetworkShotOrder fireNetworkShot(Player shooter, LauncherType type,
+    public NetworkShotOrder fireNetworkShot(Player shooter, Weapon weapon,
                                             Coordinate anchor, Orientation orientation) {
-        shooter.consumeAmmo(type);
-        shooter.resetLauncherAfterShot();
-        return new NetworkShotOrder(type, anchor, orientation);
+        shooter.consumeAmmo(weapon);
+        shooter.resetWeaponAfterShot();
+        return new NetworkShotOrder(weapon, anchor, orientation);
     }
 
     /** Tops nuclear ammo back up after a successful quiz resupply. */
     public void resupplyNuclear(Player shooter) {
-        shooter.resupplyAmmo(LauncherType.NUCLEAR, 1);
+        shooter.resupplyAmmo(WeaponCatalog.nuclear(), 1);
     }
 }

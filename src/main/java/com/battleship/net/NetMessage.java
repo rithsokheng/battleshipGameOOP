@@ -2,7 +2,6 @@ package com.battleship.net;
 
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
-import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.ShipType;
 
@@ -14,8 +13,12 @@ import java.util.List;
  * enforces exhaustiveness; stringly-typed dispatch like `case "BANANA"` is
  * impossible).
  *
- * Wire format: one JSON object per line via {@link NetMessageCodec}, which adds
- * a "type" discriminator field for Gson transport.
+ * <p>Wire format: one JSON object per line via {@link NetMessageCodec}, which adds
+ * a "type" discriminator field for Gson transport.</p>
+ *
+ * <p>{@link Fire} carries a <em>weapon id</em> (a stable string owned by the weapon
+ * strategy) rather than an enum constant, so a plugin weapon can travel the wire
+ * without a new release of the protocol class (V3.1).</p>
  *
  * Message flow:
  *   HELLO        client -> host       first message after TCP connect (join code)
@@ -23,7 +26,7 @@ import java.util.List;
  *   REJECT       host -> client       bad code / host busy; connection will close
  *   READY        either direction     sender has finished ship placement
  *   START        host -> client       "HOST" or "CLIENT" goes first
- *   FIRE         attacker -> defender launcher, anchor cell and orientation
+ *   FIRE         attacker -> defender weapon id, anchor cell and orientation
  *   FIRE_RESULT  defender -> attacker resolved cells, sunk ships, lost flag
  */
 public sealed interface NetMessage {
@@ -38,7 +41,7 @@ public sealed interface NetMessage {
 
     record Start(String firstPlayer) implements NetMessage { }
 
-    record Fire(LauncherType launcherType, Coordinate anchor, Orientation orientation) implements NetMessage { }
+    record Fire(String weaponId, Coordinate anchor, Orientation orientation) implements NetMessage { }
 
     record FireResult(List<CellResult> results, List<SunkShipInfo> sunkShips, boolean defenderLost)
             implements NetMessage { }

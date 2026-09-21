@@ -1,8 +1,8 @@
 package com.battleship.ai;
 
-import com.battleship.model.Board;
 import com.battleship.model.Coordinate;
 import com.battleship.model.ShotResult;
+import com.battleship.model.fog.TrackingGrid;
 
 import java.security.SecureRandom;
 import java.util.List;
@@ -13,8 +13,8 @@ public class RandomAI implements AIStrategy {
     private final SecureRandom random = new SecureRandom();
 
     @Override
-    public Coordinate chooseTarget(Board enemyBoard) {
-        List<Coordinate> unshot = enemyBoard.getUnshotCells();
+    public Coordinate chooseTarget(TrackingGrid knowledge) {
+        List<Coordinate> unshot = knowledge.unshotCells();
         return unshot.get(random.nextInt(unshot.size()));
     }
 

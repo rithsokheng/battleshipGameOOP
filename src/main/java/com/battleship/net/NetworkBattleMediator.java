@@ -3,16 +3,27 @@ package com.battleship.net;
 import com.battleship.controller.LauncherFireResult;
 import com.battleship.controller.ShotResolution;
 import com.battleship.controller.ShotResolver;
+import com.battleship.model.CellStatus;
 import com.battleship.model.Player;
-import com.battleship.model.Ship;
 import com.battleship.model.ShotResult;
+import com.battleship.model.fog.MarkerStatus;
+import com.battleship.model.fog.TrackingGrid;
+import com.battleship.model.projection.ShipSnapshot;
+import com.battleship.model.weapon.Weapon;
+import com.battleship.model.weapon.WeaponCatalog;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Encapsulates the controller-level logic for a network battle (fixes V7 / SRP),
  * keeping the View free from DTO construction and network I/O.
+ *
+ * <p>Enemy knowledge is recorded into the local player's {@link TrackingGrid}
+ * (Smell 5.2), and shots are resolved through the shared {@link ShotResolution}
+ * against the local player's {@link com.battleship.model.ShotTarget} surface
+ * (V1.1).</p>
  */
 public class NetworkBattleMediator {
 
@@ -40,24 +51,35 @@ public class NetworkBattleMediator {
             boolean anySunk) {}
 
     /**
-     * Resolves an incoming shot against the local board, formats and dispatches
+     * Resolves an incoming shot against the local fleet, formats and dispatches
      * the FireResult reply message across the network session, and returns the outcome.
      */
     public IncomingFireOutcome resolveAndReply(NetMessage.Fire fire) {
-        LauncherFireResult resolution = shotResolution.resolve(
-                me.getMutableBoard(), fire.launcherType(), fire.anchor(), fire.orientation());
+        Optional<Weapon> weapon = WeaponCatalog.byId(fire.weaponId());
+        if (weapon.isEmpty()) {
+            // Unknown weapon id (e.g. a peer running a newer plugin set): reply with
+            // an empty, harmless result rather than corrupting the local fleet.
+            LauncherFireResult empty = new LauncherFireResult(List.of(), List.of());
+            if (session.getSession() != null) {
+                session.getSession().send(new NetMessage.FireResult(List.of(), List.of(), me.isFleetDestroyed()));
+            }
+            return new IncomingFireOutcome(empty, me.isFleetDestroyed(), false, false);
+        }
 
-        boolean lost = me.getMutableBoard().isAllShipsSunk();
+        LauncherFireResult resolution = shotResolution.resolve(
+                me, weapon.get(), fire.anchor(), fire.orientation());
+
+        boolean lost = me.isFleetDestroyed();
         boolean anyHit = resolution.results().stream().anyMatch(ShotResult::isHit);
-        boolean anySunk = !resolution.sunkShips().isEmpty();
+        boolean anySunk = resolution.anySunk();
 
         List<NetMessage.CellResult> cellResults = new ArrayList<>();
         for (ShotResult r : resolution.results()) {
             cellResults.add(new NetMessage.CellResult(r.coordinate(), r.outcome()));
         }
         List<NetMessage.SunkShipInfo> sunkInfos = new ArrayList<>();
-        for (Ship s : resolution.sunkShips()) {
-            sunkInfos.add(new NetMessage.SunkShipInfo(s.getType(), s.getOccupiedCells()));
+        for (ShipSnapshot sunk : resolution.sunkShips()) {
+            sunkInfos.add(new NetMessage.SunkShipInfo(sunk.type(), sunk.cells()));
         }
         if (session.getSession() != null) {
             session.getSession().send(new NetMessage.FireResult(cellResults, sunkInfos, lost));
@@ -65,5 +87,26 @@ public class NetworkBattleMediator {
 
         return new IncomingFireOutcome(resolution, lost, anyHit, anySunk);
     }
-}
 
+    /**
+     * Records the defender's report of my own shot in my tracking grid: this is the
+     * only way a network admiral ever learns anything (true fog of war).
+     */
+    public void recordObservedResult(NetMessage.FireResult result) {
+        TrackingGrid knowledge = me.trackingGrid();
+        for (NetMessage.CellResult cell : result.results()) {
+            knowledge.recordShotOutcome(cell.coordinate(), markerFor(cell.outcome()));
+        }
+        for (NetMessage.SunkShipInfo sunk : result.sunkShips()) {
+            knowledge.recordWreck(sunk.shipType(), sunk.cells());
+        }
+    }
+
+    private static MarkerStatus markerFor(CellStatus outcome) {
+        return switch (outcome) {
+            case HIT -> MarkerStatus.HIT;
+            case SUNK -> MarkerStatus.SUNK;
+            default -> MarkerStatus.MISS;
+        };
+    }
+}

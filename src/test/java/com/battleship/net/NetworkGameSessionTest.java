@@ -1,6 +1,6 @@
 package com.battleship.net;
 
-import com.battleship.model.Board;
+import com.battleship.model.HumanPlayer;
 import com.battleship.model.Player;
 import com.battleship.model.Theater;
 import org.junit.jupiter.api.Test;
@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class NetworkGameSessionTest {
 
     private NetworkGameSession sessionFor(Role role) {
-        Player me = new Player("Me", true, new Board(7));
-        return new NetworkGameSession(null, Theater.SKIRMISH, role, me, new EnemyTracker(7));
+        Player me = new HumanPlayer("Me", Theater.SKIRMISH);
+        return new NetworkGameSession(null, Theater.SKIRMISH, role, me);
     }
 
     @Test

@@ -5,6 +5,9 @@ import com.battleship.model.Coordinate;
 import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
+import com.battleship.model.weapon.NuclearWarhead;
+import com.battleship.model.weapon.Weapon;
+import com.battleship.view.battle.WeaponConsole;
 import com.battleship.view.quiz.NuclearLaunchDialog;
 import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
@@ -30,6 +33,9 @@ import java.util.Optional;
  * Subclasses supply only the layout chrome and the polymorphic shot
  * resolution ({@link #resolveShot}), eliminating the former ~60% copy-paste
  * between the two battle screens.
+ * Composite view base for both battle screens (local + network).
+ * Composes autonomous components (such as {@link WeaponConsole}) and manages
+ * the shared targeting ghost preview, fire-click pipeline, and navigation exit.
  */
 public abstract class AbstractBattleView {
 
@@ -43,6 +49,7 @@ public abstract class AbstractBattleView {
 
     protected BoardGridPane ownGrid;
     protected BoardGridPane enemyGrid;
+    protected final WeaponConsole weaponConsole = new WeaponConsole();
     protected HBox launcherBar;
 
     private final List<Coordinate> ghostCells = new ArrayList<>();
@@ -59,6 +66,7 @@ public abstract class AbstractBattleView {
     public final StackPane build() {
         launcherBar = new HBox(10);
         launcherBar.setAlignment(Pos.CENTER);
+        launcherBar = weaponConsole.node();
         refreshLauncherBar();
 
         ownGrid = createOwnGrid();
@@ -121,11 +129,14 @@ public abstract class AbstractBattleView {
 
     /** Applies a launcher selection for the firing player. */
     protected abstract void selectLauncher(LauncherType type);
+    /** Applies a weapon selection for the firing player. */
+    protected abstract void selectWeapon(Weapon weapon);
 
     /** UI reaction to a click on an already-shelled area. */
     protected abstract void reportBlockedShot();
 
     /** UI reaction to rejected nuclear launch codes (re-arm DEFAULT + repaint). */
+    /** UI reaction to rejected nuclear launch codes (re-arm default + repaint). */
     protected abstract void onNuclearRejected();
 
     /** Weapon-button style class per state, e.g. {@code weapon-button-selected}. Subclasses can override if needed (V3). */
@@ -138,13 +149,17 @@ public abstract class AbstractBattleView {
     }
 
     /** Default orientation label text shared across battle views (V4). */
+    /** Default orientation label text shared across battle views. */
     protected final String orientationLabelText() {
         Orientation o = firingPlayer().getLauncherOrientation();
+        Orientation o = firingPlayer().weaponOrientation();
         return "Orientation: " + (o.isHorizontal() ? "HORIZONTAL" : "VERTICAL")
                 + "  (R or Right-Click to rotate \u2014 affects Level 2 / Nuclear)";
+                + "  (R or Right-Click to rotate \u2014 affects Salvo / Nuclear)";
     }
 
     /** Shared shot outcome audio playback (V5). */
+    /** Shared shot outcome audio playback. */
     protected final void playResultAudio(boolean anyHit, boolean anySunk) {
         if (anySunk) {
             audio.playSunk();
@@ -172,6 +187,8 @@ public abstract class AbstractBattleView {
 
         LauncherType type = firingPlayer().getSelectedLauncher();
         List<Coordinate> pattern = type.getTargetCells(anchor, firingOrientation());
+        Weapon weapon = firingPlayer().selectedWeapon();
+        List<Coordinate> pattern = weapon.calculateBlastArea(anchor, firingOrientation());
 
         boolean anyLiveCell = pattern.stream().anyMatch(c ->
                 c.isWithinBounds(targetBoardSize()) && !isCellAlreadyResolved(c));
@@ -181,6 +198,7 @@ public abstract class AbstractBattleView {
         }
 
         if (type == LauncherType.NUCLEAR) {
+        if (weapon instanceof NuclearWarhead) {
             boolean authorized = NuclearLaunchDialog.askAndAwaitAuthorization(enemyGrid.getScene().getWindow());
             if (!authorized) {
                 onNuclearRejected();
@@ -189,6 +207,7 @@ public abstract class AbstractBattleView {
         }
 
         if (type == LauncherType.NUCLEAR) {
+        if (weapon instanceof NuclearWarhead) {
             audio.playNuclear();
         } else {
             audio.playFire();
@@ -199,6 +218,7 @@ public abstract class AbstractBattleView {
 
     protected final Orientation firingOrientation() {
         return firingPlayer().getLauncherOrientation();
+        return firingPlayer().weaponOrientation();
     }
 
     private void attachFireHandlers() {
@@ -218,6 +238,8 @@ public abstract class AbstractBattleView {
         clearGhost();
         LauncherType type = firingPlayer().getSelectedLauncher();
         List<Coordinate> cells = type.getTargetCells(new Coordinate(row, col), firingOrientation());
+        Weapon weapon = firingPlayer().selectedWeapon();
+        List<Coordinate> cells = weapon.calculateBlastArea(new Coordinate(row, col), firingOrientation());
         int size = enemyGrid.getSize();
         for (Coordinate c : cells) {
             if (!c.isWithinBounds(size)) continue;
@@ -238,6 +260,14 @@ public abstract class AbstractBattleView {
         for (LauncherType type : LauncherType.values()) {
             launcherBar.getChildren().add(buildLauncherButton(type));
         }
+        weaponConsole.refresh(
+                firingPlayer(),
+                controller.getSelectedTheater().getBoardSize(),
+                canFireNow() && extraWeaponGate(),
+                weapon -> {
+                    selectWeapon(weapon);
+                    refreshLauncherBar();
+                });
     }
 
     private Button buildLauncherButton(LauncherType type) {
@@ -276,6 +306,7 @@ public abstract class AbstractBattleView {
 
     protected final void toggleOrientation() {
         firingPlayer().toggleLauncherOrientation();
+        firingPlayer().toggleWeaponOrientation();
         onOrientationChanged();
     }
 

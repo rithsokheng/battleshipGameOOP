@@ -3,7 +3,7 @@ package com.battleship.view;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.Orientation;
-import com.battleship.model.Ship;
+import com.battleship.model.projection.ShipSnapshot;
 import javafx.animation.KeyFrame;
 import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
@@ -20,9 +20,12 @@ import javafx.util.Duration;
 import java.util.List;
 
 /**
- * Reusable board grid used by ShipPlaceView, BattleView, and GameOverView.
- * ISSUE 6: renderSunkShip() colors EVERY cell belonging to a sunk ship
- * (not just the last hit) and adds a cross-out line + darker border.
+ * Reusable board grid used by the placement screens, both battle screens and the
+ * game-over screens.
+ *
+ * <p>Ships are painted from immutable {@link ShipSnapshot}s (V1.2) — this widget
+ * never receives a mutable domain entity, so a UI component cannot alter the
+ * game state it renders.</p>
  */
 public class BoardGridPane extends GridPane {
 
@@ -92,11 +95,11 @@ public class BoardGridPane extends GridPane {
         applyCellState(cells[c.getRow()][c.getCol()], stateClass);
     }
 
-    /** Renders a placed (not-yet-shot) ship, used during placement. */
-    public void renderShip(Ship ship) {
-        Orientation orientation = ship.getOrientation();
-        Image sprite = ImageResources.ship(ship.getType(), orientation);
-        List<Coordinate> occupied = ship.getOccupiedCells();
+    /** Renders a placed (not-yet-shot) ship, used during placement and on own-fleet boards. */
+    public void renderShip(ShipSnapshot ship) {
+        Orientation orientation = ship.orientation();
+        Image sprite = ImageResources.ship(ship.type(), orientation);
+        List<Coordinate> occupied = ship.cells();
         int len = occupied.size();
 
         for (int i = 0; i < len; i++) {
@@ -201,10 +204,10 @@ public class BoardGridPane extends GridPane {
         }
     }
 
-    /** ISSUE 6: colors every cell of the sunk ship, not just the triggering hit. */
-    public void renderSunkShip(Ship ship) {
+    /** Colours every cell of a sunk hull (not just the triggering hit) and crosses it out. */
+    public void renderSunkShip(List<Coordinate> occupiedCells) {
         Image fire = ImageResources.effect("hit-explosion");
-        for (Coordinate c : ship.getOccupiedCells()) {
+        for (Coordinate c : occupiedCells) {
             StackPane cell = cells[c.getRow()][c.getCol()];
             cell.getChildren().clear();
             applyCellState(cell, CELL_SUNK);

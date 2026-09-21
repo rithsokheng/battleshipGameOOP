@@ -1,11 +1,11 @@
 package com.battleship.controller;
 
 import com.battleship.model.Coordinate;
+import com.battleship.model.FleetDeployment;
 import com.battleship.model.Orientation;
-import com.battleship.model.Player;
-import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 import com.battleship.model.Theater;
+import com.battleship.model.projection.ShipSnapshot;
 
 import java.security.SecureRandom;
 import java.util.LinkedHashMap;
@@ -13,64 +13,65 @@ import java.util.Map;
 
 /**
  * Encapsulates all ship-placement logic: fleet-remaining accounting, legality
- * checks, placement/removal, and random auto-deployment. Extracted from
+ * checks, deployment/removal, and random auto-deployment. Extracted from
  * GameController so the controller can stay a thin mediator (SRP).
+ *
+ * <p>Fixes Smell 5.1 (Law of Demeter): this service used to reach through the
+ * player to grab a mutable board —
+ * {@code player.getMutableBoard().placeShip(...)} — which is textbook
+ * Feature Envy. It now operates exclusively on the {@link FleetDeployment}
+ * command interface, so it neither knows nor cares that players exist.</p>
  */
 public class PlacementService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    /** Ship types still needed for the player, keyed by type, with remaining count. */
-    public Map<ShipType, Integer> getRemainingShipCounts(Player player, Theater theater) {
+    /** Ship types still needed, keyed by type, with remaining count. */
+    public Map<ShipType, Integer> getRemainingShipCounts(FleetDeployment deployment, Theater theater) {
         Map<ShipType, Integer> remaining = new LinkedHashMap<>(theater.getFleetComposition());
-        for (Ship s : player.getOwnBoard().getShips()) {
-            remaining.merge(s.getType(), -1, Integer::sum);
+        for (ShipSnapshot ship : deployment.fleet()) {
+            remaining.merge(ship.type(), -1, Integer::sum);
         }
         remaining.entrySet().removeIf(e -> e.getValue() <= 0);
         return remaining;
     }
 
-    /** Places a ship only if the fleet composition still allows it and the board does too. */
-    public boolean placeShip(Player player, Theater theater,
-                             ShipType type, Coordinate start, Orientation orientation) {
-        Map<ShipType, Integer> remaining = getRemainingShipCounts(player, theater);
-        if (!remaining.containsKey(type) || remaining.get(type) <= 0) return false;
-        return player.getMutableBoard().placeShip(type, start, orientation);
+    /** Deploys a ship only if the fleet composition still allows it and the grid does too. */
+    public boolean deploy(FleetDeployment deployment, Theater theater,
+                          ShipType type, Coordinate start, Orientation orientation) {
+        Map<ShipType, Integer> remaining = getRemainingShipCounts(deployment, theater);
+        if (remaining.getOrDefault(type, 0) <= 0) return false;
+        return deployment.deploy(type, start, orientation);
     }
 
-    /** Validates placement without mutating state. */
-    public boolean canPlace(Player player, ShipType type, Coordinate start, Orientation orientation) {
-        return player.getMutableBoard().isValidPlacement(type, start, orientation);
+    /** Validates a deployment without mutating state. */
+    public boolean canDeploy(FleetDeployment deployment, ShipType type, Coordinate start, Orientation orientation) {
+        return deployment.canDeploy(type, start, orientation);
     }
 
-    /** Pulls an already-placed ship back off the board ("put ship back"). */
-    public boolean removeShip(Player player, Ship ship) {
-        return player.getMutableBoard().removeShip(ship);
+    /** Pulls an already-deployed hull at the given coordinate back into the dock. */
+    public boolean undeployAt(FleetDeployment deployment, Coordinate c) {
+        return deployment.undeployAt(c);
     }
 
-    /** Pulls an already-placed ship at the given coordinate back off the board. */
-    public boolean removeShipAt(Player player, Coordinate c) {
-        return player.getMutableBoard().removeShipAt(c);
+    public boolean isDeploymentComplete(FleetDeployment deployment, Theater theater) {
+        return deployment.fleet().size() == theater.getTotalShipCount();
     }
 
-    public boolean isPlacementComplete(Player player, Theater theater) {
-        return player.getMutableBoard().getShips().size() == theater.getTotalShipCount();
+    public void resetDeployment(FleetDeployment deployment) {
+        deployment.clearDeployment();
     }
 
-    public void resetPlacement(Player player) {
-        player.getMutableBoard().clearShips();
-    }
-
-    /** Randomly places all remaining ships for the player (spec 4.2, retry until success). */
-    public void autoPlaceAll(Player player, Theater theater) {
-        Map<ShipType, Integer> remaining = getRemainingShipCounts(player, theater);
+    /** Randomly deploys all remaining ships (spec 4.2, retry until success). */
+    public void autoDeployAll(FleetDeployment deployment, Theater theater) {
+        Map<ShipType, Integer> remaining = getRemainingShipCounts(deployment, theater);
         int size = theater.getBoardSize();
         for (Map.Entry<ShipType, Integer> entry : remaining.entrySet()) {
             for (int i = 0; i < entry.getValue(); i++) {
                 boolean placed = false;
                 for (int attempt = 0; attempt < 10_000 && !placed; attempt++) {
                     Coordinate start = new Coordinate(RANDOM.nextInt(size), RANDOM.nextInt(size));
-                    placed = player.getMutableBoard().placeShip(entry.getKey(), start, Orientation.random(RANDOM));
+                    placed = deployment.deploy(entry.getKey(), start, Orientation.random(RANDOM));
                 }
             }
         }

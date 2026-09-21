@@ -1,11 +1,15 @@
 package com.battleship.view;
 
-import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.ShipType;
+import com.battleship.model.weapon.SalvoBarrage;
+import com.battleship.model.weapon.NuclearWarhead;
+import com.battleship.model.weapon.StandardShell;
+import com.battleship.model.weapon.Weapon;
 import javafx.scene.image.Image;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -48,13 +52,20 @@ public final class ImageResources {
                 + (orientation.isHorizontal() ? "h" : "v") + ".png");
     }
 
-    public static Image launcherIcon(LauncherType type) {
-        String name = switch (type) {
-            case DEFAULT -> "launcher-default";
-            case LEVEL_2 -> "launcher-level2";
-            case NUCLEAR -> "launcher-nuclear";
-        };
-        return load("/images/ui/" + name + ".png");
+    /**
+     * Icon for a weapon, keyed by its stable id. Weapons have no bundled art by
+     * default (a plugin weapon simply gets no icon), so the mapping is data, not
+     * behavior — adding a weapon to the game never requires touching this class.
+     */
+    private static final Map<String, String> WEAPON_ICONS = Map.of(
+            StandardShell.ID, "launcher-default",
+            SalvoBarrage.ID, "launcher-level2",
+            NuclearWarhead.ID, "launcher-nuclear"
+    );
+
+    public static Image weaponIcon(Weapon weapon) {
+        String name = WEAPON_ICONS.get(weapon.id());
+        return name == null ? null : load("/images/ui/" + name + ".png");
     }
 
     /** Hit/miss/fire effect art. Pass just the base name, e.g. "hit-explosion", "miss-splash", "fire-1". */

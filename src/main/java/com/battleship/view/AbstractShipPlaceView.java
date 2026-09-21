@@ -5,6 +5,7 @@ import com.battleship.model.Coordinate;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
 import com.battleship.model.Ship;
+import com.battleship.model.projection.ShipSnapshot;
 import com.battleship.model.ShipType;
 import javafx.animation.TranslateTransition;
 import javafx.scene.control.Alert;
@@ -230,6 +231,7 @@ public abstract class AbstractShipPlaceView {
         ghostCells.clear();
         // Re-render any already-placed ships that may have been under the ghost.
         for (Ship s : player.getOwnBoard().getShips()) {
+        for (ShipSnapshot s : player.fleet()) {
             boardGridPane.renderShip(s);
         }
     }
@@ -246,10 +248,12 @@ public abstract class AbstractShipPlaceView {
     protected void refreshAll() {
         boardGridPane.clearAll();
         for (Ship s : player.getOwnBoard().getShips()) {
+        for (ShipSnapshot s : player.fleet()) {
             boardGridPane.renderShip(s);
         }
         dockPane.refresh();
         int placed = player.getOwnBoard().getShips().size();
+        int placed = player.deployedShipCount();
         int total = controller.getSelectedTheater().getTotalShipCount();
         countLabel.setText("Ships placed: " + placed + " / " + total);
         readyButton.setDisable(!controller.isPlacementComplete(player) || isReadyLocked());

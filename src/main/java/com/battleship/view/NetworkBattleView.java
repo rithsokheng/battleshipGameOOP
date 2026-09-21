@@ -8,6 +8,11 @@ import com.battleship.model.LauncherType;
 import com.battleship.model.Player;
 import com.battleship.model.Ship;
 import com.battleship.model.ShotResult;
+import com.battleship.model.fog.MarkerStatus;
+import com.battleship.model.projection.ShipSnapshot;
+import com.battleship.model.weapon.NuclearWarhead;
+import com.battleship.model.weapon.Weapon;
+import com.battleship.model.weapon.WeaponCatalog;
 import com.battleship.net.NetMessage;
 import com.battleship.net.NetworkBattleMediator;
 import com.battleship.net.NetworkGameSession;
@@ -62,11 +67,13 @@ public class NetworkBattleView extends AbstractBattleView {
 
     @Override
     protected int targetBoardSize() { return netSession.getEnemyTracker().getSize(); }
+    protected int targetBoardSize() { return netSession.getEnemyKnowledge().size(); }
 
     @Override
     protected boolean isCellAlreadyResolved(Coordinate c) {
         CellStatus s = netSession.getEnemyTracker().getStatus(c);
         return s == CellStatus.HIT || s == CellStatus.MISS || s == CellStatus.SUNK;
+        return netSession.getEnemyKnowledge().isAlreadyShelled(c);
     }
 
     @Override
@@ -80,6 +87,11 @@ public class NetworkBattleView extends AbstractBattleView {
         CellStatus status = netSession.getEnemyTracker().getStatus(c);
         if (status == CellStatus.HIT || status == CellStatus.MISS) {
             enemyGrid.renderShot(c, status);
+        MarkerStatus status = netSession.getEnemyKnowledge().observedStatus(c);
+        if (status == MarkerStatus.HIT) {
+            enemyGrid.renderShot(c, CellStatus.HIT);
+        } else if (status == MarkerStatus.MISS) {
+            enemyGrid.renderShot(c, CellStatus.MISS);
         } else {
             enemyGrid.resetCellStyle(row, col);
         }
@@ -88,6 +100,8 @@ public class NetworkBattleView extends AbstractBattleView {
     @Override
     protected void selectLauncher(LauncherType type) {
         me.selectLauncher(type, controller.getSelectedTheater().getBoardSize());
+    protected void selectWeapon(Weapon weapon) {
+        controller.selectWeapon(me, weapon);
     }
 
     @Override
@@ -98,6 +112,7 @@ public class NetworkBattleView extends AbstractBattleView {
     @Override
     protected void onNuclearRejected() {
         me.selectLauncher(LauncherType.DEFAULT, controller.getSelectedTheater().getBoardSize());
+        controller.selectWeapon(me, WeaponCatalog.defaultWeapon());
         logLabel.setText("Launch codes rejected. Nuclear strike aborted \u2014 Default weapon re-armed.");
         refreshLauncherBar();
     }
@@ -117,6 +132,8 @@ public class NetworkBattleView extends AbstractBattleView {
     protected BoardGridPane createOwnGrid() {
         BoardGridPane grid = new BoardGridPane(me.getOwnBoard().getSize());
         for (Ship s : me.getOwnBoard().getShips()) {
+        BoardGridPane grid = new BoardGridPane(me.size());
+        for (ShipSnapshot s : me.fleet()) {
             if (!s.isSunk()) grid.renderShip(s);
         }
         return grid;
@@ -125,6 +142,7 @@ public class NetworkBattleView extends AbstractBattleView {
     @Override
     protected BoardGridPane createEnemyGrid() {
         return new BoardGridPane(netSession.getEnemyTracker().getSize());
+        return new BoardGridPane(netSession.getEnemyKnowledge().size());
     }
 
     @Override
@@ -208,6 +226,7 @@ public class NetworkBattleView extends AbstractBattleView {
             if (r.outcome() != CellStatus.SUNK) ownGrid.renderShot(r.coordinate(), r.outcome());
         }
         for (Ship s : outcome.resolution().sunkShips()) ownGrid.renderSunkShip(s);
+        for (ShipSnapshot s : outcome.resolution().sunkShips()) ownGrid.renderSunkShip(s.cells());
 
         refreshFleetStatus();
 
@@ -226,6 +245,7 @@ public class NetworkBattleView extends AbstractBattleView {
 
     /** I am the attacker: apply the result the defender reported for my shot. */
     private void handleFireResult(NetMessage.FireResult result) {
+        mediator.recordObservedResult(result);
         boolean anyHit = applyCellResults(result.results());
         String sunkLog = applySunkShips(result.sunkShips());
 
@@ -275,6 +295,7 @@ public class NetworkBattleView extends AbstractBattleView {
         for (NetMessage.SunkShipInfo si : sunkShips) {
             Ship ship = netSession.getEnemyTracker().recordSunk(si.shipType(), si.cells());
             enemyGrid.renderSunkShip(ship);
+            enemyGrid.renderSunkShip(si.cells());
             log.append(si.shipType().name().replace('_', ' ')).append(" has been sent to the bottom! ");
         }
         return log.toString();
@@ -296,13 +317,17 @@ public class NetworkBattleView extends AbstractBattleView {
     @Override
     protected void resolveShot(Coordinate anchor) {
         LauncherType type = me.getSelectedLauncher();
+        Weapon weapon = me.selectedWeapon();
 
         // Fix 7: all domain mutations (ammo consumption, launcher reset) live in
+        // All domain mutations (ammo consumption, launcher reset) live in
         // the controller-owned NetworkFireService — the view only does UI + network I/O.
         NetworkFireService.NetworkShotOrder order =
                 controller.fireNetworkShot(me, type, anchor, firingOrientation());
+                controller.fireNetworkShot(me, weapon, anchor, firingOrientation());
 
         if (type == LauncherType.NUCLEAR && !me.hasAmmo(LauncherType.NUCLEAR)) {
+        if (weapon instanceof NuclearWarhead && !me.hasAmmo(weapon)) {
             NuclearResupplyDialog.show(nav.getStage(), () -> {
                 controller.resupplyNuclearAmmo(me);
                 refreshLauncherBar();
@@ -310,6 +335,7 @@ public class NetworkBattleView extends AbstractBattleView {
         }
 
         netSession.getSession().send(new NetMessage.Fire(order.launcherType(), order.anchor(), order.orientation()));
+        netSession.getSession().send(new NetMessage.Fire(order.weapon().id(), order.anchor(), order.orientation()));
 
         netSession.beginOpponentTurn();
         turnLabel.setText("AWAITING RESPONSE\u2026");
@@ -321,6 +347,9 @@ public class NetworkBattleView extends AbstractBattleView {
         int myTotal = me.getOwnBoard().getShips().size();
         long myLost = me.getOwnBoard().getShips().stream().filter(Ship::isSunk).count();
         int enemySunkKnown = netSession.getEnemyTracker().getKnownSunkShips().size();
+        int myTotal = me.fleet().size();
+        long myLost = me.fleet().stream().filter(ShipSnapshot::isSunk).count();
+        int enemySunkKnown = netSession.getEnemyKnowledge().confirmedSunk().size();
         int enemyTotal = controller.getSelectedTheater().getTotalShipCount();
         fleetStatusLabel.setText("Your ships lost: " + myLost + " / " + myTotal +
                 "     Enemy ships confirmed sunk: " + enemySunkKnown + " / " + enemyTotal);
