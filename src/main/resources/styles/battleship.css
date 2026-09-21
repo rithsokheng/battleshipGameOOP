@@ -741,3 +741,50 @@
 .stat-divider {
     -fx-background-color: rgba(46,93,135,0.6);
 }
+
+/* ---------- Modal Alert Dialogs ---------- */
+
+.dialog-pane.battleship-alert {
+    -fx-background-color: #071528;
+    -fx-border-color: #1a3f65;
+    -fx-border-width: 1.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 14px;
+}
+
+.dialog-pane.battleship-alert > .content.label {
+    -fx-text-fill: #c7d9e8;
+    -fx-font-size: 13px;
+    -fx-font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.dialog-pane.battleship-alert:header .header-panel {
+    -fx-background-color: #0a1e38;
+}
+
+.dialog-pane.battleship-alert:header .header-panel .label {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd166;
+}
+
+.dialog-pane.battleship-alert .button-bar .button {
+    -fx-background-color: #0e2b4d;
+    -fx-text-fill: #e6f0fa;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-border-color: #245888;
+    -fx-border-radius: 6px;
+    -fx-padding: 6px 16px;
+    -fx-cursor: hand;
+}
+
+.dialog-pane.battleship-alert .button-bar .button:hover {
+    -fx-background-color: #174273;
+    -fx-border-color: #44b8ff;
+}
+
+.dialog-pane.battleship-alert .button-bar .button:pressed {
+    -fx-background-color: #0b223d;
+}

@@ -16,6 +16,10 @@ public final class SoundManager implements GameAudio {
 
     private static volatile SoundManager instance;
 
+    /**
+     * @deprecated Prefer dependency-injecting {@link GameAudio} via {@link ViewNavigator} or constructors.
+     */
+    @Deprecated
     public static SoundManager getInstance() {
         if (instance == null) {
             synchronized (SoundManager.class) {
@@ -62,7 +66,7 @@ public final class SoundManager implements GameAudio {
         this.initFailed = true;
     }
 
-    private SoundManager() {
+    public SoundManager() {
         try {
             ensureGeneratedFiles();
             for (String name : ALL_EFFECTS) {

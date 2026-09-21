@@ -124,10 +124,6 @@ public class JoinLobbyView {
 
     private void showError(String message) {
         status.setText(message);
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Connection problem");
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        AlertUtil.showError(nav.window(), "Connection Problem", message);
     }
 }

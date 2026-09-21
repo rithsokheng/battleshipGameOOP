@@ -268,12 +268,7 @@ public abstract class AbstractShipPlaceView {
     }
 
     private void confirmExit() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Exit Game");
-        alert.setHeaderText(null);
-        alert.setContentText(exitPrompt());
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
+        if (AlertUtil.showConfirmation(nav.window(), "Exit Game", exitPrompt())) {
             onExitConfirmed();
             audio.stopBgm();
             audio.playMenuMusic();

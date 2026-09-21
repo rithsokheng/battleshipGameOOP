@@ -13,27 +13,7 @@ import com.battleship.net.NetworkGameSession;
  * By extending {@link AudioProvider} and {@link WindowProvider}, the navigator
  * also satisfies segregated clients that only need sound playback or a dialog owner window.</p>
  */
-public interface ViewNavigator extends AudioProvider, WindowProvider {
-
-    // ---------- Local (vs AI / hotseat) flow ----------
-
-    void showMainMenu();
-    void showModeSelect();
-    void showBoardSelect();
-    void showShipPlacement();
-    void showPassScreen(Runnable onContinue);
-    void showBattle();
-    void showGameOver(Player winner);
-    void showMultiplayerLobby();
-
-    // ---------- Network ("Play With a Friend") flow ----------
-
-    void showNetworkShipPlacement(NetworkGameSession session);
-    void showNetworkBattle(NetworkGameSession session);
-    void showNetworkGameOver(NetworkGameSession session, boolean won);
-
-    /** Lets standalone screens push themselves directly. */
-    void setScreen(javafx.scene.Parent root);
+public interface ViewNavigator extends ScreenNavigator, AudioProvider, WindowProvider {
 
     /** The window, needed only by modal dialogs owned by deep screens. */
     javafx.stage.Stage getStage();

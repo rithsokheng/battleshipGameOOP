@@ -118,7 +118,8 @@ com.battleship
 │
 └── view            # JavaFX presentation layer
     ├── MainApp.java           # JavaFX Application entry point
-    ├── ViewNavigator.java     # Navigation abstraction (DI seam for views)
+    ├── ScreenNavigator.java   # Focused screen routing role interface (ISP)
+    ├── ViewNavigator.java     # Composite navigator interface (ScreenNavigator, AudioProvider, WindowProvider)
     ├── AudioProvider.java     # Audio accessor interface
     ├── WindowProvider.java    # Stage accessor interface
     ├── MainMenuView.java      # Title screen with centered navigation
@@ -150,8 +151,11 @@ com.battleship
     ├── ImageResources.java    # Asset cache
     ├── QrCodeUtil.java        # ZXing QR code generator
     │
-    ├── battle/                # Combat view UI components
+    ├── battle/                # Combat view UI components & viewport strategies
+    │   ├── AlternatingPerspective.java # Hotseat alternating viewport strategy (OCP)
     │   ├── BattleLog.java     # Reusable combat message log component
+    │   ├── BattlePerspective.java # Viewport perspective strategy interface
+    │   ├── FixedPerspective.java # Single-player pinned viewport strategy (OCP)
     │   └── WeaponConsole.java # Weapon selection and ammo UI bar
     │
     ├── decor/                 # Procedural canvas animation renderers
@@ -210,20 +214,26 @@ java -jar target/naval-command-1.0.0.jar
 mvn test
 ```
 
-The test suite (JUnit 5) runs headlessly — **no JavaFX runtime or display required** — comprising **38 tests across 14 test suites**:
+The test suite (JUnit 5) runs headlessly — **no JavaFX runtime or display required** — comprising **45 tests across 16 test suites**:
 - **AI Strategies:** `ParityHunterTest`
 - **Combat & Resolution:** `BattleServiceTest`, `ShotResolverTest`
+- **Combat Viewport Strategies:** `BattlePerspectiveTest`
 - **Controller & DIP:** `GameControllerDIPTest` (hotseat lifecycle, online mode, DI seams)
 - **Domain Models:** `TurnTest`, `MatchStatisticsTest`
 - **Weapons & Polymorphism:** `BlastPatternRotationTest`, `WeaponPolymorphismTest`
 - **Networking:** `NetworkGameSessionTest`, `NetworkBattleMediatorTest`
 - **Persistence:** `GameSaveMapperTest`, `SaveGameServiceTest`, `SaveGameIntegrationTest`
-- **Audio Abstractions:** `SilentAudioTest`
+- **Audio & Navigation Abstractions:** `InterfaceSegregationTest`, `SilentAudioTest`
 
 ---
 
 ## Key OOP Principles Implemented
 
+- **Strategy Pattern & Open/Closed Principle (OCP):**
+  - Viewport perspective in [`LocalBattleView`](file:///home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/LocalBattleView.java) is abstracted via [`BattlePerspective`](file:///home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/battle/BattlePerspective.java) with [`FixedPerspective`](file:///home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/battle/FixedPerspective.java) for vs-AI and [`AlternatingPerspective`](file:///home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/battle/AlternatingPerspective.java) for Hotseat, eliminating procedural conditionals in the view layer.
+- **Interface Segregation Principle (ISP):**
+  - Screen routing is isolated into [`ScreenNavigator`](file:///home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/view/ScreenNavigator.java), allowing screens to depend only on navigation without coupling to audio or stage providers.
+  - [`Player`](file:///home/debrouillez-vous/Downloads/Projects/vB/battleshipGameOOP/src/main/java/com/battleship/model/Player.java) directly exposes focused component accessors (`primaryGrid()`, `ammoReadout()`), eliminating the Middle Man code smell.
 - **Polymorphism over Conditionals (OCP / LSP):**
   - The `Weapon` hierarchy (`StandardShell`, `SalvoBarrage`, `NuclearWarhead`) encapsulates blast pattern generation, ammo constraints, launch authorization protocol (`requiresAuthorization()`), and audio dispatch (`playFiringSound(...)`), eliminating `instanceof` checks and switch statements.
 - **Strict Fog-of-War Encapsulation:**

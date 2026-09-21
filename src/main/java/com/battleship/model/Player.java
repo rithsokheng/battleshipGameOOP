@@ -66,6 +66,21 @@ public abstract class Player implements FleetReadout, FleetDeployment, ShotTarge
         return trackingGrid;
     }
 
+    /**
+     * Own waters and fleet deployment aggregate (implements FleetReadout,
+     * FleetDeployment, and ShotTarget).
+     */
+    public PrimaryGrid primaryGrid() {
+        return primaryGrid;
+    }
+
+    /**
+     * Ammunition readout component for weapon stock queries.
+     */
+    public AmmoReadout ammoReadout() {
+        return arsenal;
+    }
+
     // ---------- Polymorphic turn behaviour (replaces the isHuman flag) ----------
 
     /** True for machine-controlled players, which act without a UI click. */

@@ -106,8 +106,9 @@ public class NetworkSession {
         } catch (IOException ignored) {
             // socket closed locally, or connection dropped by the peer
         } finally {
+            boolean peerDrop = running;
             running = false;
-            if (onDisconnected != null) dispatch(onDisconnected);
+            if (peerDrop && onDisconnected != null) dispatch(onDisconnected);
         }
     }
 

@@ -106,11 +106,7 @@ public class HostLobbyView {
                 },
                 error -> {
                     status.setText("Could not host — try again.");
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Hosting failed");
-                    alert.setHeaderText(null);
-                    alert.setContentText("Couldn't start hosting: " + error.getMessage());
-                    alert.showAndWait();
+                    AlertUtil.showError(nav.window(), "Hosting Failed", "Couldn't start hosting: " + error.getMessage());
                 },
                 Platform::runLater);
     }

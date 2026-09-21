@@ -163,11 +163,7 @@ public class NetworkShipPlaceView extends AbstractShipPlaceView {
 
     private void handleDisconnect() {
         statusLabel.setText("Connection lost.");
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Disconnected");
-        alert.setHeaderText(null);
-        alert.setContentText("Your opponent disconnected.");
-        alert.showAndWait();
+        AlertUtil.showWarning(nav.window(), "Disconnected", "Your opponent disconnected.");
         nav.showMainMenu();
     }
 

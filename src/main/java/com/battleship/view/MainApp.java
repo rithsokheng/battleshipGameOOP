@@ -94,12 +94,14 @@ public class MainApp extends Application implements ViewNavigator {
         setRoot(new NetworkGameOverView(this, session, won).build());
     }
 
+    private final GameAudio audio = new SoundManager();
+
     public Stage getStage() { return stage; }
     public GameController getController() { return controller; }
 
     /** Views play sounds through the GameAudio abstraction, never the singleton. */
     @Override
-    public GameAudio getAudio() { return SoundManager.getInstance(); }
+    public GameAudio getAudio() { return audio; }
 
     public static void main(String[] args) {
         launch(args);

@@ -53,33 +53,25 @@ public class LocalBattleView extends AbstractBattleView {
     private final BattleLog battleLog = new BattleLog();
 
 
+    private final com.battleship.view.battle.BattlePerspective perspective;
+
     public LocalBattleView(ViewNavigator nav, GameController controller) {
+        this(nav, controller, controller.getSelectedMode() == GameMode.HOTSEAT
+                ? new com.battleship.view.battle.AlternatingPerspective(controller)
+                : new com.battleship.view.battle.FixedPerspective(controller));
+    }
+
+    public LocalBattleView(ViewNavigator nav, GameController controller, com.battleship.view.battle.BattlePerspective perspective) {
         super(nav, controller);
+        this.perspective = java.util.Objects.requireNonNull(perspective, "BattlePerspective is required.");
     }
 
-    // ---------- Perspective helpers ----------
+    // ---------- Perspective helpers (Strategy Pattern — satisfies OCP) ----------
 
-    private boolean vsAi() { return controller.getSelectedMode() != GameMode.HOTSEAT; }
-
-    /** Name shown for "my" side: always the human in vs-AI, the current player in hotseat. */
-    private String perspectiveName() {
-        return vsAi() ? controller.getPlayerName(1) : controller.getCurrentPlayer().name();
-    }
-
-    /** Read-only view of "my" fleet (V1.1 / V1.2). */
-    private FleetReadout perspectiveFleet() {
-        return vsAi() ? controller.getPlayerFleet(1) : controller.getCurrentPlayer();
-    }
-
-    /** Name shown for the opposing side. */
-    private String opponentName() {
-        return vsAi() ? controller.getPlayerName(2) : controller.getOpponent().name();
-    }
-
-    /** The knowledge grid for the current admiral's view of enemy waters (V1.3). */
-    private TrackingGrid opponentKnowledge() {
-        return vsAi() ? controller.getTrackingGrid(1) : controller.getCurrentPlayer().trackingGrid();
-    }
+    private String perspectiveName() { return perspective.perspectiveName(); }
+    private FleetReadout perspectiveFleet() { return perspective.perspectiveFleet(); }
+    private String opponentName() { return perspective.opponentName(); }
+    private TrackingGrid opponentKnowledge() { return perspective.opponentKnowledge(); }
 
     // ---------- AbstractBattleView hooks ----------
 

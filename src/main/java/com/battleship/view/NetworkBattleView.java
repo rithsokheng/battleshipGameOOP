@@ -194,11 +194,7 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     private void handleDisconnect() {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("Disconnected");
-        alert.setHeaderText(null);
-        alert.setContentText("Your opponent disconnected.");
-        alert.showAndWait();
+        AlertUtil.showWarning(nav.window(), "Disconnected", "Your opponent disconnected.");
         nav.showMainMenu();
     }
 
