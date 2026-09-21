@@ -15,11 +15,12 @@ import com.battleship.model.fog.TrackingGrid;
 import com.battleship.model.projection.ShipSnapshot;
 import com.battleship.model.weapon.Weapon;
 import com.battleship.persistence.GameSaveDTO;
+import com.battleship.persistence.GameSaveMapper;
 import com.battleship.persistence.SaveGameService;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.time.Instant;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,9 +87,10 @@ public class GameController {
     private void initializeGame() {
         // Polymorphic players replace the old isHuman boolean (V2.2): the mode
         // decides which subclass is instantiated, not a flag inside one class.
+        boolean vsHuman = selectedMode == GameMode.HOTSEAT || selectedMode == GameMode.ONLINE || selectedMode == null;
         boolean hotseat = selectedMode == GameMode.HOTSEAT;
-        player1 = new HumanPlayer("Admiral (You)", selectedTheater);
-        player2 = hotseat
+        player1 = new HumanPlayer(hotseat ? "Admiral 1" : "Admiral (You)", selectedTheater);
+        player2 = vsHuman
                 ? new HumanPlayer("Admiral 2", selectedTheater)
                 : new com.battleship.model.AiPlayer("Enemy AI", selectedTheater, AIFactory.create(selectedMode));
 
@@ -166,7 +168,7 @@ public class GameController {
     public Player getOpponent() { return battleService.getOpponent(); }
 
     public boolean isAiTurn() {
-        return selectedMode != GameMode.HOTSEAT && battleService.isAiTurn();
+        return selectedMode != null && selectedMode.isVsAi() && battleService.isAiTurn();
     }
 
     public boolean selectWeapon(Player player, Weapon weapon) {
@@ -279,23 +281,9 @@ public class GameController {
             throw new IllegalStateException("Cannot save a game that has not been initialized.");
         }
         int size = selectedTheater != null ? selectedTheater.getBoardSize() : player1.size();
-
-        GameSaveDTO.PlayerDTO p1Dto = toPlayerDTO(player1, size);
-        GameSaveDTO.PlayerDTO p2Dto = toPlayerDTO(player2, size);
-
         int currentIndex = (battleService.getCurrentPlayer() == player1) ? 1 : 2;
 
-        GameSaveDTO dto = GameSaveDTO.builder()
-                .version("1.0.0")
-                .timestamp(Instant.now().toString())
-                .boardSize(size)
-                .gameState(state != null ? state.name() : "BATTLE")
-                .player1(p1Dto)
-                .player2(p2Dto)
-                .currentPlayerIndex(currentIndex)
-                .turnHistory(List.of())
-                .build();
-
+        GameSaveDTO dto = GameSaveMapper.toDTO(player1, player2, size, state, currentIndex);
         return saveGameService.save(dto, directory);
     }
 
@@ -304,22 +292,8 @@ public class GameController {
         return saveGameService.load(file);
     }
 
-    private GameSaveDTO.PlayerDTO toPlayerDTO(Player player, int size) {
-        String[][] board = new String[size][size];
-        for (int r = 0; r < size; r++) {
-            for (int c = 0; c < size; c++) {
-                board[r][c] = player.cellStatus(new Coordinate(r, c)).name();
-            }
-        }
-        List<GameSaveDTO.ShipDTO> ships = new ArrayList<>();
-        for (ShipSnapshot s : player.fleet()) {
-            List<String> coords = s.cells().stream().map(Coordinate::toString).toList();
-            ships.add(new GameSaveDTO.ShipDTO(s.type().name(), s.hitCount(), coords));
-        }
-        return new GameSaveDTO.PlayerDTO(player.name(), player.isHuman(), board, ships);
-    }
-
     // ---------- Mutable access (package-private; controller-internal/tests only — fixes F2) ----------
+
 
     Player getPlayer1() { return player1; }
     Player getPlayer2() { return player2; }

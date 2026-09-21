@@ -7,9 +7,9 @@ import com.battleship.model.Player;
 import com.battleship.model.ShotOrder;
 import com.battleship.model.ShotResult;
 import com.battleship.model.Turn;
-import com.battleship.model.fog.MarkerStatus;
 import com.battleship.model.fog.TrackingGrid;
 import com.battleship.model.projection.ShipSnapshot;
+
 import com.battleship.model.weapon.Weapon;
 
 import java.security.SecureRandom;
@@ -129,20 +129,13 @@ public class BattleService {
     private void recordObservedOutcome(Player attacker, LauncherFireResult result) {
         TrackingGrid knowledge = attacker.trackingGrid();
         for (ShotResult shot : result.results()) {
-            knowledge.recordShotOutcome(shot.coordinate(), markerFor(shot.outcome()));
+            knowledge.recordShotOutcome(shot.coordinate(), shot.outcome());
         }
         for (ShipSnapshot sunk : result.sunkShips()) {
             knowledge.recordWreck(sunk.type(), sunk.cells());
         }
     }
 
-    private static MarkerStatus markerFor(CellStatus outcome) {
-        return switch (outcome) {
-            case HIT -> MarkerStatus.HIT;
-            case SUNK -> MarkerStatus.SUNK;
-            default -> MarkerStatus.MISS;
-        };
-    }
-
     public boolean isBattleOver() { return battleOver; }
 }
+

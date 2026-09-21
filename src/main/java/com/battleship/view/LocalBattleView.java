@@ -15,6 +15,7 @@ import com.battleship.model.fog.TrackingGrid;
 import com.battleship.model.projection.ShipSnapshot;
 import com.battleship.model.weapon.Weapon;
 import com.battleship.model.weapon.WeaponCatalog;
+import com.battleship.view.battle.BattleLog;
 import com.battleship.view.quiz.NuclearResupplyDialog;
 import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
@@ -49,7 +50,8 @@ public class LocalBattleView extends AbstractBattleView {
     private Label ownShipsLeftLabel;
     private Label enemyShipsLeftLabel;
     private VBox shipStatusBar;
-    private VBox attackLogList;
+    private final BattleLog battleLog = new BattleLog();
+
 
     public LocalBattleView(ViewNavigator nav, GameController controller) {
         super(nav, controller);
@@ -429,34 +431,13 @@ public class LocalBattleView extends AbstractBattleView {
 
     /** Scrolling, newest-first attack log. */
     private VBox buildAttackLogCard() {
-        Label logTitle = new Label("ATTACK LOG");
-        logTitle.getStyleClass().add("side-card-title");
-        attackLogList = new VBox(6);
-        attackLogList.setFillWidth(true);
-
-        ScrollPane scroll = new ScrollPane(attackLogList);
-        scroll.setFitToWidth(true);
-        scroll.setPrefHeight(240);
-        scroll.setPannable(true);
-        scroll.getStyleClass().add("attack-log-scroll");
-
-        VBox logCard = new VBox(12, logTitle, scroll);
-        logCard.getStyleClass().add("side-card");
-        VBox.setVgrow(logCard, Priority.ALWAYS);
-        return logCard;
+        return battleLog.node();
     }
 
     private void addLogEntry(String text, String type) {
-        if (attackLogList == null) return;
-        Label entry = new Label(text);
-        entry.setWrapText(true);
-        entry.setMaxWidth(220);
-        entry.getStyleClass().addAll("log-entry", "log-entry-" + type);
-        attackLogList.getChildren().add(0, entry);
-        while (attackLogList.getChildren().size() > 50) {
-            attackLogList.getChildren().remove(attackLogList.getChildren().size() - 1);
-        }
+        battleLog.add(text, type);
     }
+
 
     private void refreshShipStatusBar() {
         shipStatusBar.getChildren().clear();

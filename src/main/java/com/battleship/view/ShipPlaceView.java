@@ -1,6 +1,7 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
+import com.battleship.model.GameMode;
 import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.animation.SequentialTransition;
@@ -194,7 +195,13 @@ public class ShipPlaceView extends AbstractShipPlaceView {
                 controller.resumePlacementAfterPass();
                 nav.showShipPlacement();
             });
-            case BATTLE -> nav.showBattle();
+            case BATTLE -> {
+                if (controller.getSelectedMode() == GameMode.HOTSEAT) {
+                    nav.showPassScreen(() -> nav.showBattle());
+                } else {
+                    nav.showBattle();
+                }
+            }
             default -> nav.showShipPlacement();
         }
     }

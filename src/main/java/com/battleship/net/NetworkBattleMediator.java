@@ -6,9 +6,9 @@ import com.battleship.controller.ShotResolver;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Player;
 import com.battleship.model.ShotResult;
-import com.battleship.model.fog.MarkerStatus;
 import com.battleship.model.fog.TrackingGrid;
 import com.battleship.model.projection.ShipSnapshot;
+
 import com.battleship.model.weapon.Weapon;
 import com.battleship.model.weapon.WeaponCatalog;
 
@@ -95,18 +95,11 @@ public class NetworkBattleMediator {
     public void recordObservedResult(NetMessage.FireResult result) {
         TrackingGrid knowledge = me.trackingGrid();
         for (NetMessage.CellResult cell : result.results()) {
-            knowledge.recordShotOutcome(cell.coordinate(), markerFor(cell.outcome()));
+            knowledge.recordShotOutcome(cell.coordinate(), cell.outcome());
         }
         for (NetMessage.SunkShipInfo sunk : result.sunkShips()) {
             knowledge.recordWreck(sunk.shipType(), sunk.cells());
         }
     }
-
-    private static MarkerStatus markerFor(CellStatus outcome) {
-        return switch (outcome) {
-            case HIT -> MarkerStatus.HIT;
-            case SUNK -> MarkerStatus.SUNK;
-            default -> MarkerStatus.MISS;
-        };
-    }
 }
+

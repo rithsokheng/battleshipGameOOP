@@ -132,6 +132,7 @@ public class BoardSelectView {
             controller.setTheater(theater);
             nav.showShipPlacement();
         });
+        select.addEventHandler(javafx.scene.input.MouseEvent.MOUSE_CLICKED, javafx.event.Event::consume);
 
         VBox top = new VBox(6, name, sizeBadge);
         top.setAlignment(Pos.CENTER);
@@ -145,9 +146,15 @@ public class BoardSelectView {
         card.setPrefWidth(272);
         card.setPrefHeight(420);
         card.getStyleClass().addAll("card-panel", "mode-card", accentClass);
+        card.setCursor(javafx.scene.Cursor.HAND);
 
         card.setOnMouseEntered(e -> { card.setScaleX(1.025); card.setScaleY(1.025); card.setTranslateY(-4); });
         card.setOnMouseExited(e -> { card.setScaleX(1.0); card.setScaleY(1.0); card.setTranslateY(0); });
+        card.setOnMouseClicked(e -> {
+            nav.getAudio().playClick();
+            controller.setTheater(theater);
+            nav.showShipPlacement();
+        });
 
         return card;
     }

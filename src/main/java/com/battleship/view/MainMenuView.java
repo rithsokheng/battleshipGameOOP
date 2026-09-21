@@ -45,7 +45,7 @@ public class MainMenuView {
         subtitle.setFont(Font.font("Arial", FontWeight.SEMI_BOLD, 15));
         subtitle.getStyleClass().add("app-subtitle");
 
-        Button play = navButton("\u25B6  PLAY");
+        Button play = navButton("PLAY");
         play.getStyleClass().addAll("primary-button", "featured-button");
         play.setOnAction(e -> { nav.getAudio().playClick(); nav.showModeSelect(); });
 
@@ -105,6 +105,7 @@ public class MainMenuView {
         b.setPrefHeight(54);
         b.setMaxWidth(280);
         b.setFont(Font.font("Arial", FontWeight.BOLD, 15));
+        b.setAlignment(Pos.CENTER);
         b.setOnMouseEntered(e -> { b.setScaleX(1.035); b.setScaleY(1.035); b.setTranslateY(-1); });
         b.setOnMouseExited(e -> { b.setScaleX(1.0); b.setScaleY(1.0); b.setTranslateY(0); });
         return b;

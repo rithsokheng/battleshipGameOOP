@@ -2,20 +2,27 @@ package com.battleship.model;
 
 /** Ship classes with their fixed length in cells. */
 public enum ShipType {
-    PATROL_BOAT(2),
-    DESTROYER(2),
-    SUBMARINE(3),
-    CRUISER(3),
-    BATTLESHIP(4),
-    CARRIER(5);
+    PATROL_BOAT(2, "destroyer"),
+    DESTROYER(2, "destroyer"),
+    SUBMARINE(3, "submarine"),
+    CRUISER(3, "cruiser"),
+    BATTLESHIP(4, "battleship"),
+    CARRIER(5, "carrier");
 
     private final int size;
+    private final String assetName;
 
-    ShipType(int size) {
+    ShipType(int size, String assetName) {
         this.size = size;
+        this.assetName = assetName;
     }
 
     public int getSize() {
         return size;
     }
+
+    public String getAssetName() {
+        return assetName;
+    }
 }
+

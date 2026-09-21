@@ -15,13 +15,22 @@ public class AIFactory {
         };
     }
 
-    /** Returns null for HOTSEAT — no AI needed. */
+    /** Returns null for HOTSEAT, ONLINE, or null input — no AI needed. Prefer {@link #createOptional(GameMode)}. */
     public static AIStrategy create(GameMode mode) {
+        if (mode == null || mode == GameMode.HOTSEAT || mode == GameMode.ONLINE) {
+            return null;
+        }
         return switch (mode) {
             case AI_EASY -> new RandomAI();
             case AI_NORMAL -> new HuntTargetAI();
             case AI_HARD -> new SmartAI();
-            case HOTSEAT -> null;
+            default -> null;
         };
     }
+
+    /** Returns an Optional AIStrategy, empty for HOTSEAT. */
+    public static java.util.Optional<AIStrategy> createOptional(GameMode mode) {
+        return java.util.Optional.ofNullable(create(mode));
+    }
 }
+

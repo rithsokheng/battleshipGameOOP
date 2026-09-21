@@ -73,6 +73,12 @@ public final class TrackingGrid {
         markers.put(coord, outcome);
     }
 
+    /** Convenience overload that converts a domain CellStatus into MarkerStatus automatically. */
+    public void recordShotOutcome(Coordinate coord, com.battleship.model.CellStatus outcome) {
+        recordShotOutcome(coord, MarkerStatus.from(outcome));
+    }
+
+
     /** Records an announced wreck: every cell becomes SUNK and the hull joins the loss board. */
     public void recordWreck(ShipType type, List<Coordinate> hullCells) {
         Objects.requireNonNull(type, "A wreck needs a ship type.");

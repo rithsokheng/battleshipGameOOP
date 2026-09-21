@@ -4,7 +4,9 @@ import com.battleship.controller.GameController;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
 import com.battleship.model.FleetReadout;
+import com.battleship.model.MatchStatistics;
 import com.battleship.model.Player;
+
 import com.battleship.model.projection.ShipSnapshot;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
@@ -142,31 +144,22 @@ public class GameOverView {
                 ? controller.getPlayerFleet(2)
                 : controller.getPlayerFleet(1);
 
-        int hits = 0, misses = 0;
-        for (int r = 0; r < defenderFleet.size(); r++) {
-            for (int c = 0; c < defenderFleet.size(); c++) {
-                CellStatus status = defenderFleet.cellStatus(new Coordinate(r, c));
-                if (status == CellStatus.HIT || status == CellStatus.SUNK) hits++;
-                if (status == CellStatus.MISS) misses++;
-            }
-        }
-        int totalShots = hits + misses;
-        double accuracy = totalShots == 0 ? 0 : (100.0 * hits / totalShots);
-        long shipsSunk = defenderFleet.fleet().stream().filter(ShipSnapshot::isSunk).count();
+        MatchStatistics stats = MatchStatistics.from(defenderFleet);
 
         HBox row = new HBox(0,
-                statPill("SHOTS FIRED", String.valueOf(totalShots)),
+                statPill("SHOTS FIRED", String.valueOf(stats.totalShots())),
                 statDivider(),
-                statPill("HITS", String.valueOf(hits)),
+                statPill("HITS", String.valueOf(stats.hits())),
                 statDivider(),
-                statPill("ACCURACY", String.format("%.1f%%", accuracy)),
+                statPill("ACCURACY", String.format("%.1f%%", stats.accuracy())),
                 statDivider(),
-                statPill("SHIPS SUNK", String.valueOf(shipsSunk)));
+                statPill("SHIPS SUNK", String.valueOf(stats.shipsSunk())));
         row.getStyleClass().add("side-card");
         row.setAlignment(Pos.CENTER);
         row.setPadding(new Insets(16, 26, 16, 26));
         return row;
     }
+
 
     private VBox statPill(String label, String value) {
         Label v = new Label(value);

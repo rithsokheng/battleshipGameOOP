@@ -37,4 +37,15 @@ public final class NuclearWarhead implements Weapon {
     public BlastPattern blastPattern() {
         return BlastPattern.of(2, 3); // 2x3 horizontally, 3x2 vertically
     }
+
+    @Override
+    public boolean requiresAuthorization() {
+        return true;
+    }
+
+    @Override
+    public void playFiringSound(com.battleship.view.SfxAudio audio) {
+        audio.playNuclear();
+    }
 }
+

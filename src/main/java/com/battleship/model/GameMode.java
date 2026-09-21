@@ -5,7 +5,8 @@ public enum GameMode {
     AI_EASY("vs AI - Easy"),
     AI_NORMAL("vs AI - Normal"),
     AI_HARD("vs AI - Hard"),
-    HOTSEAT("1v1 Hotseat");
+    HOTSEAT("1v1 Hotseat"),
+    ONLINE("Play with a Friend");
 
     private final String label;
 
@@ -13,5 +14,5 @@ public enum GameMode {
 
     public String getLabel() { return label; }
 
-    public boolean isVsAi() { return this != HOTSEAT; }
+    public boolean isVsAi() { return this != HOTSEAT && this != ONLINE; }
 }

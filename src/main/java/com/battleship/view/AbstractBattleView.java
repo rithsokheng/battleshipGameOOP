@@ -4,8 +4,8 @@ import com.battleship.controller.GameController;
 import com.battleship.model.Coordinate;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
-import com.battleship.model.weapon.NuclearWarhead;
 import com.battleship.model.weapon.Weapon;
+
 import com.battleship.view.battle.WeaponConsole;
 import com.battleship.view.quiz.NuclearLaunchDialog;
 import javafx.scene.control.Alert;
@@ -162,7 +162,7 @@ public abstract class AbstractBattleView {
             return;
         }
 
-        if (weapon instanceof NuclearWarhead) {
+        if (weapon.requiresAuthorization()) {
             boolean authorized = NuclearLaunchDialog.askAndAwaitAuthorization(enemyGrid.getScene().getWindow());
             if (!authorized) {
                 onNuclearRejected();
@@ -170,14 +170,11 @@ public abstract class AbstractBattleView {
             }
         }
 
-        if (weapon instanceof NuclearWarhead) {
-            audio.playNuclear();
-        } else {
-            audio.playFire();
-        }
+        weapon.playFiringSound(audio);
         clearGhost();
         resolveShot(anchor);
     }
+
 
     protected final Orientation firingOrientation() {
         return firingPlayer().weaponOrientation();

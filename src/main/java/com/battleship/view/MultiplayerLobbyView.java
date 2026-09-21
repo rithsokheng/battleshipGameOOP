@@ -27,8 +27,11 @@ public class MultiplayerLobbyView {
         this.controller = controller;
     }
 
+    private boolean inTheaterStep = false;
+
     public StackPane build() {
-        Label title = new Label("\uD83D\uDCF1 PLAY WITH A FRIEND");
+        controller.setMode(com.battleship.model.GameMode.ONLINE);
+        Label title = new Label("PLAY WITH A FRIEND");
         title.setFont(Font.font("Arial Black", FontWeight.BOLD, 30));
         title.getStyleClass().add("app-title");
 
@@ -42,7 +45,14 @@ public class MultiplayerLobbyView {
         Button back = new Button("BACK");
         back.getStyleClass().add("ghost-button");
         back.setPrefWidth(120);
-        back.setOnAction(e -> nav.showModeSelect());
+        back.setOnAction(e -> {
+            nav.getAudio().playClick();
+            if (inTheaterStep) {
+                showChoiceStep();
+            } else {
+                nav.showModeSelect();
+            }
+        });
 
         VBox layout = new VBox(20, title, subtitle, contentArea, back);
         layout.setAlignment(Pos.CENTER);
@@ -52,19 +62,27 @@ public class MultiplayerLobbyView {
     }
 
     private void showChoiceStep() {
+        inTheaterStep = false;
         contentArea.getChildren().clear();
 
         Button host = navButton("HOST A GAME");
         host.getStyleClass().add("featured-button");
-        host.setOnAction(e -> showTheaterStep());
+        host.setOnAction(e -> {
+            nav.getAudio().playClick();
+            showTheaterStep();
+        });
 
         Button join = navButton("JOIN A GAME");
-        join.setOnAction(e -> nav.setScreen(new JoinLobbyView(nav, controller).build()));
+        join.setOnAction(e -> {
+            nav.getAudio().playClick();
+            nav.setScreen(new JoinLobbyView(nav, controller).build());
+        });
 
         contentArea.getChildren().addAll(host, join);
     }
 
     private void showTheaterStep() {
+        inTheaterStep = true;
         contentArea.getChildren().clear();
 
         Label pick = new Label("Choose the battlefield size:");
@@ -81,7 +99,10 @@ public class MultiplayerLobbyView {
 
     private Button theaterButton(Theater theater) {
         Button b = navButton(theater.getDisplayName() + "  (" + theater.getBoardSize() + "\u00D7" + theater.getBoardSize() + ")");
-        b.setOnAction(e -> nav.setScreen(new HostLobbyView(nav, controller, theater).build()));
+        b.setOnAction(e -> {
+            nav.getAudio().playClick();
+            nav.setScreen(new HostLobbyView(nav, controller, theater).build());
+        });
         return b;
     }
 

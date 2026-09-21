@@ -41,16 +41,11 @@ public final class ImageResources {
      * (it's a 2-length ship, like DESTROYER) so it borrows the destroyer sprite.
      */
     public static Image ship(ShipType type, Orientation orientation) {
-        String name = switch (type) {
-            case PATROL_BOAT, DESTROYER -> "destroyer";
-            case SUBMARINE -> "submarine";
-            case CRUISER -> "cruiser";
-            case BATTLESHIP -> "battleship";
-            case CARRIER -> "carrier";
-        };
+        String name = type.getAssetName();
         return load("/images/ships/" + name + "-"
                 + (orientation.isHorizontal() ? "h" : "v") + ".png");
     }
+
 
     /**
      * Icon for a weapon, keyed by its stable id. Weapons have no bundled art by

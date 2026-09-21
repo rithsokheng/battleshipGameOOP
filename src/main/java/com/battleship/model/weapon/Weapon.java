@@ -36,4 +36,15 @@ public interface Weapon {
             com.battleship.model.Coordinate anchor, Orientation orientation) {
         return blastPattern().coverage(anchor, orientation);
     }
+
+    /** Whether this weapon requires confirmation/authorization before launching. */
+    default boolean requiresAuthorization() {
+        return false;
+    }
+
+    /** Polymorphic audio trigger for firing this weapon. */
+    default void playFiringSound(com.battleship.view.SfxAudio audio) {
+        audio.playFire();
+    }
 }
+

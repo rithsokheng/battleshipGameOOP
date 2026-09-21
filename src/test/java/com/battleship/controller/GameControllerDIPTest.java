@@ -41,5 +41,63 @@ class GameControllerDIPTest {
         boolean removedAgain = controller.removeShipAt(player, start);
         assertFalse(removedAgain);
     }
+
+    @Test
+    void hotseatPlayerNamingAndInitialization() {
+        GameController controller = new GameController();
+        controller.setMode(GameMode.HOTSEAT);
+        controller.setTheater(Theater.SKIRMISH);
+
+        assertEquals("Admiral 1", controller.getPlayerName(1));
+        assertEquals("Admiral 2", controller.getPlayerName(2));
+        assertTrue(controller.getPlayer1() instanceof com.battleship.model.HumanPlayer);
+        assertTrue(controller.getPlayer2() instanceof com.battleship.model.HumanPlayer);
+    }
+
+    @Test
+    void onlineModePlayerInitialization() {
+        GameController controller = new GameController();
+        controller.setMode(GameMode.ONLINE);
+        assertDoesNotThrow(() -> controller.setTheater(Theater.SKIRMISH));
+        assertTrue(controller.getPlayer1() instanceof com.battleship.model.HumanPlayer);
+        assertTrue(controller.getPlayer2() instanceof com.battleship.model.HumanPlayer);
+        assertFalse(controller.isAiTurn());
+    }
+
+    @Test
+    void setTheaterWithoutPriorModeSelectDoesNotThrowNPE() {
+        GameController controller = new GameController();
+        assertNull(controller.getSelectedMode());
+        assertDoesNotThrow(() -> controller.setTheater(Theater.FLEET_ACTION));
+        assertTrue(controller.getPlayer1() instanceof com.battleship.model.HumanPlayer);
+        assertTrue(controller.getPlayer2() instanceof com.battleship.model.HumanPlayer);
+    }
+
+    @Test
+    void hotseatPlacementLifecycleFlow() {
+        GameController controller = new GameController();
+        controller.setMode(GameMode.HOTSEAT);
+        controller.setTheater(Theater.SKIRMISH);
+
+        assertEquals(com.battleship.model.GameState.SHIP_PLACEMENT, controller.getState());
+        assertEquals("Admiral 1", controller.getPlacingPlayer().getName());
+
+        controller.autoPlaceRemaining(controller.getPlayer1());
+        assertTrue(controller.isPlacementComplete(controller.getPlayer1()));
+
+        controller.confirmReady();
+        assertEquals(com.battleship.model.GameState.PASS_SCREEN, controller.getState());
+        assertEquals("Admiral 2", controller.getPlacingPlayer().getName());
+
+        controller.resumePlacementAfterPass();
+        assertEquals(com.battleship.model.GameState.SHIP_PLACEMENT, controller.getState());
+
+        controller.autoPlaceRemaining(controller.getPlayer2());
+        assertTrue(controller.isPlacementComplete(controller.getPlayer2()));
+
+        controller.confirmReady();
+        assertEquals(com.battleship.model.GameState.BATTLE, controller.getState());
+        assertNotNull(controller.getCurrentPlayer());
+    }
 }
 

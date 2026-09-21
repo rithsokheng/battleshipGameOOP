@@ -97,13 +97,18 @@ public abstract class Player implements FleetReadout, FleetDeployment, ShotTarge
         return arsenal.select(weapon);
     }
 
+    /** @deprecated Prefer {@link #selectWeapon(Weapon)} with {@link com.battleship.model.weapon.WeaponCatalog#defaultWeapon()}. */
+    @Deprecated
     public boolean aimDefault() {
         return selectWeapon(com.battleship.model.weapon.WeaponCatalog.defaultWeapon());
     }
 
+    /** @deprecated Prefer {@link #selectWeapon(Weapon)} with {@link com.battleship.model.weapon.WeaponCatalog#nuclear()}. */
+    @Deprecated
     public boolean aimNuclear() {
         return selectWeapon(com.battleship.model.weapon.WeaponCatalog.nuclear());
     }
+
 
     public void toggleWeaponOrientation() {
         arsenal.toggleOrientation();

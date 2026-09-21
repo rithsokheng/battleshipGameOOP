@@ -149,9 +149,10 @@ public class SmartAI implements AIStrategy {
             for (int r = 0; r <= size - laid.rows(); r++) {
                 for (int c = 0; c <= size - laid.cols(); c++) {
                     int score = 0;
-                    for (Coordinate cell : laid.coverage(new Coordinate(r, c), orientation)) {
+                    for (Coordinate cell : laid.coverage(new Coordinate(r, c))) {
                         if (!knowledge.isAlreadyShelled(cell)) score++;
                     }
+
                     if (score > bestScore) {
                         bestScore = score;
                         bestAnchor = new Coordinate(r, c);

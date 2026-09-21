@@ -36,6 +36,7 @@ public class JoinLobbyView {
     }
 
     public StackPane build() {
+        controller.setMode(com.battleship.model.GameMode.ONLINE);
         Label title = new Label("JOIN A GAME");
         title.setFont(Font.font("Arial Black", FontWeight.BOLD, 28));
         title.getStyleClass().add("app-title");

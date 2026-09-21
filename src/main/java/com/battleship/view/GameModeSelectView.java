@@ -8,6 +8,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
@@ -115,9 +117,20 @@ public class GameModeSelectView {
         Label badge = new Label("SAME DEVICE");
         badge.getStyleClass().addAll("mode-card-badge", "mode-card-badge-hotseat");
 
-        Label handshake = new Label("\uD83E\uDD1D");
-        handshake.setFont(Font.font(38));
-        StackPane icon = iconRing(handshake, "mode-card-icon-ring-hotseat");
+        Image anchorArt = ImageResources.ui("icon-anchor");
+        javafx.scene.Node iconInner;
+        if (anchorArt != null) {
+            ImageView iv = new ImageView(anchorArt);
+            iv.setFitWidth(48);
+            iv.setFitHeight(48);
+            iv.setPreserveRatio(true);
+            iconInner = iv;
+        } else {
+            Label handshake = new Label("\u2694");
+            handshake.setFont(Font.font(36));
+            iconInner = handshake;
+        }
+        StackPane icon = iconRing(iconInner, "mode-card-icon-ring-hotseat");
 
         Label sub = new Label("PLAYER 1  vs  PLAYER 2");
         sub.getStyleClass().add("mode-card-sub");
@@ -129,12 +142,16 @@ public class GameModeSelectView {
         select.getStyleClass().addAll("primary-button");
         select.setPrefWidth(180);
         select.setPrefHeight(46);
+        select.setAlignment(Pos.CENTER);
         select.setOnAction(e -> selectMode(GameMode.HOTSEAT));
+        select.addEventHandler(javafx.scene.input.MouseEvent.MOUSE_CLICKED, javafx.event.Event::consume);
 
         VBox body = new VBox(16, sub, select);
         body.setAlignment(Pos.CENTER);
 
-        return card(heading, badge, icon, body, "mode-card-hotseat");
+        VBox card = card(heading, badge, icon, body, "mode-card-hotseat");
+        card.setOnMouseClicked(e -> selectMode(GameMode.HOTSEAT));
+        return card;
     }
 
     // ---------- Online card (real LAN + QR feature, styled as the third card) ----------
@@ -146,26 +163,51 @@ public class GameModeSelectView {
         Label badge = new Label("LAN / QR MATCH");
         badge.getStyleClass().addAll("mode-card-badge", "mode-card-badge-online");
 
-        Label compassGlyph = new Label("\uD83E\uDDED");
-        compassGlyph.setFont(Font.font(38));
-        StackPane icon = iconRing(compassGlyph, "mode-card-icon-ring-online");
+        Image compassArt = ImageResources.ui("compass-rose");
+        javafx.scene.Node iconInner;
+        if (compassArt != null) {
+            ImageView iv = new ImageView(compassArt);
+            iv.setFitWidth(52);
+            iv.setFitHeight(52);
+            iv.setPreserveRatio(true);
+            iconInner = iv;
+        } else {
+            Label compassGlyph = new Label("\u2693");
+            compassGlyph.setFont(Font.font(36));
+            iconInner = compassGlyph;
+        }
+        StackPane icon = iconRing(iconInner, "mode-card-icon-ring-online");
 
-        Label sub = new Label("LAN + QR\nMATCHMAKING");
+        Label sub = new Label("LAN + QR MATCHMAKING");
         sub.getStyleClass().add("mode-card-sub");
         sub.setWrapText(true);
+        sub.setMinWidth(210);
+        sub.setPrefWidth(210);
         sub.setAlignment(Pos.CENTER);
         sub.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
-        Button select = new Button("\uD83D\uDCF1  PLAY");
+        Button select = new Button("PLAY");
         select.getStyleClass().addAll("primary-button", "featured-button");
         select.setPrefWidth(180);
         select.setPrefHeight(46);
-        select.setOnAction(e -> { nav.getAudio().playClick(); nav.showMultiplayerLobby(); });
+        select.setAlignment(Pos.CENTER);
+        select.setOnAction(e -> {
+            nav.getAudio().playClick();
+            controller.setMode(GameMode.ONLINE);
+            nav.showMultiplayerLobby();
+        });
+        select.addEventHandler(javafx.scene.input.MouseEvent.MOUSE_CLICKED, javafx.event.Event::consume);
 
         VBox body = new VBox(16, sub, select);
         body.setAlignment(Pos.CENTER);
 
-        return card(heading, badge, icon, body, "mode-card-online");
+        VBox card = card(heading, badge, icon, body, "mode-card-online");
+        card.setOnMouseClicked(e -> {
+            nav.getAudio().playClick();
+            controller.setMode(GameMode.ONLINE);
+            nav.showMultiplayerLobby();
+        });
+        return card;
     }
 
     // ---------- shared card chrome ----------
@@ -177,6 +219,7 @@ public class GameModeSelectView {
         box.setPrefWidth(268);
         box.setPrefHeight(360);
         box.getStyleClass().addAll("card-panel", "mode-card", accentClass);
+        box.setCursor(javafx.scene.Cursor.HAND);
 
         // A small lift + scale on hover so the cards feel tactile, matching
         // the button hover treatment used across the rest of the app.

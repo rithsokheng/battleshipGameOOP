@@ -1,6 +1,7 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
+import com.battleship.model.GameState;
 import com.battleship.model.Player;
 import com.battleship.net.NetworkGameSession;
 import javafx.application.Application;
@@ -62,7 +63,10 @@ public class MainApp extends Application implements ViewNavigator {
     }
 
     public void showPassScreen(Runnable onContinue) {
-        setRoot(new PassScreen(controller.getPlacingPlayer().getName(), onContinue).build());
+        String nextName = (controller.getState() == GameState.PASS_SCREEN || controller.getState() == GameState.SHIP_PLACEMENT)
+                ? controller.getPlacingPlayer().getName()
+                : controller.getCurrentPlayer().name();
+        setRoot(new PassScreen(nextName, onContinue).build());
     }
 
     public void showBattle() {

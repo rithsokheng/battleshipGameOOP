@@ -29,8 +29,14 @@ public class NetworkFireService {
         return new NetworkShotOrder(weapon, anchor, orientation);
     }
 
+    /** Resupplies ammunition for the specified weapon. */
+    public void resupplyAmmo(Player shooter, Weapon weapon, int amount) {
+        shooter.resupplyAmmo(weapon, amount);
+    }
+
     /** Tops nuclear ammo back up after a successful quiz resupply. */
     public void resupplyNuclear(Player shooter) {
-        shooter.resupplyAmmo(WeaponCatalog.nuclear(), 1);
+        resupplyAmmo(shooter, WeaponCatalog.nuclear(), 1);
     }
 }
+

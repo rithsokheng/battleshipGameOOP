@@ -46,20 +46,27 @@ public record BlastPattern(int rows, int cols) {
     }
 
     /**
-     * Every coordinate covered when the pattern is anchored at {@code anchor}.
-     * Cells outside the board are still returned — callers clip them, which keeps
-     * the pattern itself independent of any particular battlefield size.
+     * Coordinates covered when this pattern is already oriented.
      */
-    public List<Coordinate> coverage(Coordinate anchor, Orientation orientation) {
-        BlastPattern laid = rotatedTo(orientation);
-        List<Coordinate> cells = new ArrayList<>(laid.cellCount());
-        for (int r = 0; r < laid.rows(); r++) {
-            for (int c = 0; c < laid.cols(); c++) {
+    public List<Coordinate> coverage(Coordinate anchor) {
+        List<Coordinate> cells = new ArrayList<>(cellCount());
+        for (int r = 0; r < rows; r++) {
+            for (int c = 0; c < cols; c++) {
                 cells.add(new Coordinate(anchor.getRow() + r, anchor.getCol() + c));
             }
         }
         return cells;
     }
+
+    /**
+     * Every coordinate covered when the pattern is anchored at {@code anchor}.
+     * Cells outside the board are still returned — callers clip them, which keeps
+     * the pattern itself independent of any particular battlefield size.
+     */
+    public List<Coordinate> coverage(Coordinate anchor, Orientation orientation) {
+        return rotatedTo(orientation).coverage(anchor);
+    }
+
 
     /**
      * The anchor offset that keeps the whole pattern inside a board of the given size

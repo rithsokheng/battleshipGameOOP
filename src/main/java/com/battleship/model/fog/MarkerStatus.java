@@ -22,4 +22,14 @@ public enum MarkerStatus {
     public boolean isShelled() {
         return this != UNKNOWN;
     }
+
+    /** Maps a resolved grid cell outcome into a fog-of-war tracking marker. */
+    public static MarkerStatus from(com.battleship.model.CellStatus status) {
+        return switch (status) {
+            case HIT -> HIT;
+            case SUNK -> SUNK;
+            default -> MISS;
+        };
+    }
 }
+
