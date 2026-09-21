@@ -1,11 +1,9 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
-import com.battleship.model.Board;
 import com.battleship.model.HumanPlayer;
 import com.battleship.model.Player;
 import com.battleship.model.Theater;
-import com.battleship.net.EnemyTracker;
 import com.battleship.net.NetMessage;
 import com.battleship.net.NetUtil;
 import com.battleship.net.NetworkGameSession;
@@ -113,7 +111,6 @@ public class HostLobbyView {
                     alert.setHeaderText(null);
                     alert.setContentText("Couldn't start hosting: " + error.getMessage());
                     alert.showAndWait();
-                });
                 },
                 Platform::runLater);
     }
@@ -132,12 +129,8 @@ public class HostLobbyView {
         NetMessage welcome = new NetMessage.Welcome(theater.name());
         session.send(welcome);
 
-        int size = theater.getBoardSize();
-        Player me = new Player("You (Host)", true, new Board(size));
-        me.initLauncherAmmo(size);
         Player me = new HumanPlayer("You (Host)", theater);
         NetworkGameSession netSession = new NetworkGameSession(
-                session, theater, Role.HOST, me, new EnemyTracker(size));
                 session, theater, Role.HOST, me);
 
         nav.showNetworkShipPlacement(netSession);

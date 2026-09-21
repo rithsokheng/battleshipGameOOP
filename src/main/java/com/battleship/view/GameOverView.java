@@ -1,7 +1,10 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
-import com.battleship.model.*;
+import com.battleship.model.CellStatus;
+import com.battleship.model.Coordinate;
+import com.battleship.model.FleetReadout;
+import com.battleship.model.Player;
 import com.battleship.model.projection.ShipSnapshot;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
@@ -10,17 +13,15 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
 /**
- * ISSUE 6 (cont.): reveals both boards fully. Sunk ships use renderSunkShip()
+ * Reveals both boards fully. Sunk ships use renderSunkShip()
  * (all cells recolored); surviving ships use the normal ship render.
  * Restyled to match the "Fleet Command" theme: full-bleed sea backdrop
  * (gold-tinted for a win, storm-tinted for a loss), board-card framed
@@ -52,10 +53,8 @@ public class GameOverView {
         subtitle.setFont(Font.font("Arial", FontWeight.SEMI_BOLD, 13));
         subtitle.getStyleClass().add("app-subtitle");
 
-        VBox ownBoard = revealedBoardCard("YOUR FLEET", controller.getPlayerBoard(1));
         VBox ownBoard = revealedBoardCard("YOUR FLEET", controller.getPlayerFleet(1));
         VBox enemyBoard = revealedBoardCard(
-                controller.getPlayerName(2).toUpperCase() + "'S FLEET", controller.getPlayerBoard(2));
                 controller.getPlayerName(2).toUpperCase() + "'S FLEET", controller.getPlayerFleet(2));
 
         HBox boards = new HBox(28, ownBoard, enemyBoard);
@@ -111,28 +110,21 @@ public class GameOverView {
         return root;
     }
 
-    private VBox revealedBoardCard(String label, ReadOnlyBoard board) {
     private VBox revealedBoardCard(String label, FleetReadout fleet) {
         Label title = new Label(label);
         title.getStyleClass().add("board-card-title");
 
-        BoardGridPane grid = new BoardGridPane(board.getSize());
-        for (Ship s : board.getShips()) {
         BoardGridPane grid = new BoardGridPane(fleet.size());
         for (ShipSnapshot s : fleet.fleet()) {
             if (s.isSunk()) {
-                grid.renderSunkShip(s);
                 grid.renderSunkShip(s.cells());
             } else {
                 grid.renderShip(s);
             }
         }
-        for (int r = 0; r < board.getSize(); r++) {
-            for (int c = 0; c < board.getSize(); c++) {
         for (int r = 0; r < fleet.size(); r++) {
             for (int c = 0; c < fleet.size(); c++) {
                 Coordinate coord = new Coordinate(r, c);
-                if (board.getCellStatus(coord) == CellStatus.MISS) {
                 if (fleet.cellStatus(coord) == CellStatus.MISS) {
                     grid.renderShot(coord, CellStatus.MISS);
                 }
@@ -146,17 +138,11 @@ public class GameOverView {
     }
 
     private HBox buildStats() {
-        ReadOnlyBoard defenderBoard = controller.isFirstPlayer(winner)
-                ? controller.getPlayerBoard(2)
-                : controller.getPlayerBoard(1);
         FleetReadout defenderFleet = controller.isFirstPlayer(winner)
                 ? controller.getPlayerFleet(2)
                 : controller.getPlayerFleet(1);
 
         int hits = 0, misses = 0;
-        for (int r = 0; r < defenderBoard.getSize(); r++) {
-            for (int c = 0; c < defenderBoard.getSize(); c++) {
-                CellStatus status = defenderBoard.getCellStatus(new Coordinate(r, c));
         for (int r = 0; r < defenderFleet.size(); r++) {
             for (int c = 0; c < defenderFleet.size(); c++) {
                 CellStatus status = defenderFleet.cellStatus(new Coordinate(r, c));
@@ -166,7 +152,6 @@ public class GameOverView {
         }
         int totalShots = hits + misses;
         double accuracy = totalShots == 0 ? 0 : (100.0 * hits / totalShots);
-        long shipsSunk = defenderBoard.getShips().stream().filter(Ship::isSunk).count();
         long shipsSunk = defenderFleet.fleet().stream().filter(ShipSnapshot::isSunk).count();
 
         HBox row = new HBox(0,

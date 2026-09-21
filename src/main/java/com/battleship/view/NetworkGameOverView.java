@@ -1,9 +1,7 @@
 package com.battleship.view;
 
-import com.battleship.model.ReadOnlyBoard;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
-import com.battleship.model.Ship;
 import com.battleship.model.Player;
 import com.battleship.model.fog.MarkerStatus;
 import com.battleship.model.fog.TrackingGrid;
@@ -16,7 +14,6 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
-import javafx.scene.control.Label;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
@@ -27,7 +24,6 @@ import javafx.util.Duration;
 /**
  * Game over screen for a network match. Unlike the local GameOverView, we
  * never learned the opponent's real ship layout — so their board only shows
- * the cells revealed by our own shots (identical to what enemyTracker knows).
  * the cells revealed by our own shots (identical to what TrackingGrid knows).
  * Styled to match GameOverView: full-bleed sea backdrop tinted for win/loss,
  * board-card framed reveal boards.
@@ -104,22 +100,14 @@ public class NetworkGameOverView {
         Label title = new Label("YOUR FLEET");
         title.getStyleClass().add("board-card-title");
 
-        ReadOnlyBoard board = netSession.getMe().getOwnBoard();
-        BoardGridPane grid = new BoardGridPane(board.getSize());
-        for (Ship s : board.getShips()) {
-            if (s.isSunk()) grid.renderSunkShip(s); else grid.renderShip(s);
         Player me = netSession.getMe();
         BoardGridPane grid = new BoardGridPane(me.size());
         for (ShipSnapshot s : me.fleet()) {
             if (s.isSunk()) grid.renderSunkShip(s.cells()); else grid.renderShip(s);
         }
-        for (int r = 0; r < board.getSize(); r++) {
-            for (int c = 0; c < board.getSize(); c++) {
         for (int r = 0; r < me.size(); r++) {
             for (int c = 0; c < me.size(); c++) {
                 Coordinate coord = new Coordinate(r, c);
-                if (board.getCellStatus(coord) == CellStatus.MISS) grid.renderShot(coord, CellStatus.MISS);
-                if (board.getCellStatus(coord) == CellStatus.HIT) grid.renderShot(coord, CellStatus.HIT);
                 if (me.cellStatus(coord) == CellStatus.MISS) grid.renderShot(coord, CellStatus.MISS);
                 if (me.cellStatus(coord) == CellStatus.HIT) grid.renderShot(coord, CellStatus.HIT);
             }
@@ -135,22 +123,17 @@ public class NetworkGameOverView {
         Label title = new Label("ENEMY WATERS (AS OBSERVED)");
         title.getStyleClass().add("board-card-title");
 
-        int size = netSession.getEnemyTracker().getSize();
         TrackingGrid knowledge = netSession.getEnemyKnowledge();
         int size = knowledge.size();
         BoardGridPane grid = new BoardGridPane(size);
         for (int r = 0; r < size; r++) {
             for (int c = 0; c < size; c++) {
                 Coordinate coord = new Coordinate(r, c);
-                CellStatus status = netSession.getEnemyTracker().getStatus(coord);
-                if (status == CellStatus.HIT || status == CellStatus.MISS) grid.renderShot(coord, status);
                 MarkerStatus status = knowledge.observedStatus(coord);
                 if (status == MarkerStatus.HIT) grid.renderShot(coord, CellStatus.HIT);
                 else if (status == MarkerStatus.MISS) grid.renderShot(coord, CellStatus.MISS);
             }
         }
-        for (Ship s : netSession.getEnemyTracker().getKnownSunkShips()) {
-            grid.renderSunkShip(s);
         for (TrackingGrid.DiscoveredWreck wreck : knowledge.confirmedSunk()) {
             grid.renderSunkShip(wreck.cells());
         }

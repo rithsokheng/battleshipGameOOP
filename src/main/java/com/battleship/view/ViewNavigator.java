@@ -10,13 +10,9 @@ import com.battleship.net.NetworkGameSession;
  * has to be known to every screen.
  *
  * <p>{@link MainApp} is the production implementation; tests may supply a stub.
- * The {@link #getAudio()} accessor lets views play sounds through the
- * {@link GameAudio} abstraction instead of the static {@code SoundManager}
- * singleton.</p>
  * By extending {@link AudioProvider} and {@link WindowProvider}, the navigator
  * also satisfies segregated clients that only need sound playback or a dialog owner window.</p>
  */
-public interface ViewNavigator {
 public interface ViewNavigator extends AudioProvider, WindowProvider {
 
     // ---------- Local (vs AI / hotseat) flow ----------

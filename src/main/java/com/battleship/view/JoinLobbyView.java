@@ -1,11 +1,9 @@
 package com.battleship.view;
 
 import com.battleship.controller.GameController;
-import com.battleship.model.Board;
 import com.battleship.model.HumanPlayer;
 import com.battleship.model.Player;
 import com.battleship.model.Theater;
-import com.battleship.net.EnemyTracker;
 import com.battleship.net.NetMessage;
 import com.battleship.net.NetworkGameSession;
 import com.battleship.net.NetworkSession;
@@ -101,7 +99,6 @@ public class JoinLobbyView {
                     session.setOnMessage(msg -> handleWelcome(session, msg));
                     session.send(new NetMessage.Hello(code));
                 },
-                error -> showError("Couldn't connect: " + error.getMessage()));
                 error -> showError("Couldn't connect: " + error.getMessage()),
                 Platform::runLater);
     }
@@ -115,14 +112,10 @@ public class JoinLobbyView {
         if (!(msg instanceof NetMessage.Welcome welcome)) return;
 
         Theater theater = Theater.valueOf(welcome.theater());
-        int size = theater.getBoardSize();
         controller.setTheater(theater); // sets up selectedTheater so placement helpers work below
 
-        Player me = new Player("You", true, new Board(size));
-        me.initLauncherAmmo(size);
         Player me = new HumanPlayer("You", theater);
         NetworkGameSession netSession = new NetworkGameSession(
-                session, theater, Role.CLIENT, me, new EnemyTracker(size));
                 session, theater, Role.CLIENT, me);
 
         nav.showNetworkShipPlacement(netSession);

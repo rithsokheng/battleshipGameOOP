@@ -4,9 +4,7 @@ import com.battleship.controller.GameController;
 import com.battleship.controller.NetworkFireService;
 import com.battleship.model.CellStatus;
 import com.battleship.model.Coordinate;
-import com.battleship.model.LauncherType;
 import com.battleship.model.Player;
-import com.battleship.model.Ship;
 import com.battleship.model.ShotResult;
 import com.battleship.model.fog.MarkerStatus;
 import com.battleship.model.projection.ShipSnapshot;
@@ -26,7 +24,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -66,13 +63,10 @@ public class NetworkBattleView extends AbstractBattleView {
     protected boolean extraWeaponGate() { return netSession.isMyTurn(); }
 
     @Override
-    protected int targetBoardSize() { return netSession.getEnemyTracker().getSize(); }
     protected int targetBoardSize() { return netSession.getEnemyKnowledge().size(); }
 
     @Override
     protected boolean isCellAlreadyResolved(Coordinate c) {
-        CellStatus s = netSession.getEnemyTracker().getStatus(c);
-        return s == CellStatus.HIT || s == CellStatus.MISS || s == CellStatus.SUNK;
         return netSession.getEnemyKnowledge().isAlreadyShelled(c);
     }
 
@@ -84,9 +78,6 @@ public class NetworkBattleView extends AbstractBattleView {
     @Override
     protected void repaintGhostCell(int row, int col) {
         Coordinate c = new Coordinate(row, col);
-        CellStatus status = netSession.getEnemyTracker().getStatus(c);
-        if (status == CellStatus.HIT || status == CellStatus.MISS) {
-            enemyGrid.renderShot(c, status);
         MarkerStatus status = netSession.getEnemyKnowledge().observedStatus(c);
         if (status == MarkerStatus.HIT) {
             enemyGrid.renderShot(c, CellStatus.HIT);
@@ -98,8 +89,6 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected void selectLauncher(LauncherType type) {
-        me.selectLauncher(type, controller.getSelectedTheater().getBoardSize());
     protected void selectWeapon(Weapon weapon) {
         controller.selectWeapon(me, weapon);
     }
@@ -111,7 +100,6 @@ public class NetworkBattleView extends AbstractBattleView {
 
     @Override
     protected void onNuclearRejected() {
-        me.selectLauncher(LauncherType.DEFAULT, controller.getSelectedTheater().getBoardSize());
         controller.selectWeapon(me, WeaponCatalog.defaultWeapon());
         logLabel.setText("Launch codes rejected. Nuclear strike aborted \u2014 Default weapon re-armed.");
         refreshLauncherBar();
@@ -127,11 +115,8 @@ public class NetworkBattleView extends AbstractBattleView {
         netSession.getSession().close();
     }
 
-
     @Override
     protected BoardGridPane createOwnGrid() {
-        BoardGridPane grid = new BoardGridPane(me.getOwnBoard().getSize());
-        for (Ship s : me.getOwnBoard().getShips()) {
         BoardGridPane grid = new BoardGridPane(me.size());
         for (ShipSnapshot s : me.fleet()) {
             if (!s.isSunk()) grid.renderShip(s);
@@ -141,7 +126,6 @@ public class NetworkBattleView extends AbstractBattleView {
 
     @Override
     protected BoardGridPane createEnemyGrid() {
-        return new BoardGridPane(netSession.getEnemyTracker().getSize());
         return new BoardGridPane(netSession.getEnemyKnowledge().size());
     }
 
@@ -225,7 +209,6 @@ public class NetworkBattleView extends AbstractBattleView {
         for (ShotResult r : outcome.resolution().results()) {
             if (r.outcome() != CellStatus.SUNK) ownGrid.renderShot(r.coordinate(), r.outcome());
         }
-        for (Ship s : outcome.resolution().sunkShips()) ownGrid.renderSunkShip(s);
         for (ShipSnapshot s : outcome.resolution().sunkShips()) ownGrid.renderSunkShip(s.cells());
 
         refreshFleetStatus();
@@ -272,11 +255,9 @@ public class NetworkBattleView extends AbstractBattleView {
             Coordinate c = cr.coordinate();
             CellStatus status = cr.outcome();
             if (status == CellStatus.HIT) {
-                netSession.getEnemyTracker().recordHit(c);
                 enemyGrid.renderShot(c, CellStatus.HIT);
                 anyHit = true;
             } else if (status == CellStatus.MISS) {
-                netSession.getEnemyTracker().recordMiss(c);
                 enemyGrid.renderShot(c, CellStatus.MISS);
             } else if (status == CellStatus.SUNK) {
                 anyHit = true; // cell rendering handled via the sunkShips list below
@@ -293,8 +274,6 @@ public class NetworkBattleView extends AbstractBattleView {
         if (sunkShips == null || sunkShips.isEmpty()) return "";
         StringBuilder log = new StringBuilder();
         for (NetMessage.SunkShipInfo si : sunkShips) {
-            Ship ship = netSession.getEnemyTracker().recordSunk(si.shipType(), si.cells());
-            enemyGrid.renderSunkShip(ship);
             enemyGrid.renderSunkShip(si.cells());
             log.append(si.shipType().name().replace('_', ' ')).append(" has been sent to the bottom! ");
         }
@@ -316,17 +295,13 @@ public class NetworkBattleView extends AbstractBattleView {
 
     @Override
     protected void resolveShot(Coordinate anchor) {
-        LauncherType type = me.getSelectedLauncher();
         Weapon weapon = me.selectedWeapon();
 
-        // Fix 7: all domain mutations (ammo consumption, launcher reset) live in
         // All domain mutations (ammo consumption, launcher reset) live in
         // the controller-owned NetworkFireService — the view only does UI + network I/O.
         NetworkFireService.NetworkShotOrder order =
-                controller.fireNetworkShot(me, type, anchor, firingOrientation());
                 controller.fireNetworkShot(me, weapon, anchor, firingOrientation());
 
-        if (type == LauncherType.NUCLEAR && !me.hasAmmo(LauncherType.NUCLEAR)) {
         if (weapon instanceof NuclearWarhead && !me.hasAmmo(weapon)) {
             NuclearResupplyDialog.show(nav.getStage(), () -> {
                 controller.resupplyNuclearAmmo(me);
@@ -334,7 +309,6 @@ public class NetworkBattleView extends AbstractBattleView {
             });
         }
 
-        netSession.getSession().send(new NetMessage.Fire(order.launcherType(), order.anchor(), order.orientation()));
         netSession.getSession().send(new NetMessage.Fire(order.weapon().id(), order.anchor(), order.orientation()));
 
         netSession.beginOpponentTurn();
@@ -344,9 +318,6 @@ public class NetworkBattleView extends AbstractBattleView {
     }
 
     private void refreshFleetStatus() {
-        int myTotal = me.getOwnBoard().getShips().size();
-        long myLost = me.getOwnBoard().getShips().stream().filter(Ship::isSunk).count();
-        int enemySunkKnown = netSession.getEnemyTracker().getKnownSunkShips().size();
         int myTotal = me.fleet().size();
         long myLost = me.fleet().stream().filter(ShipSnapshot::isSunk).count();
         int enemySunkKnown = netSession.getEnemyKnowledge().confirmedSunk().size();

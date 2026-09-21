@@ -7,11 +7,7 @@ import com.battleship.model.Coordinate;
 import com.battleship.model.FleetReadout;
 import com.battleship.model.GameMode;
 import com.battleship.model.GameState;
-import com.battleship.model.LauncherType;
-import com.battleship.model.Orientation;
 import com.battleship.model.Player;
-import com.battleship.model.ReadOnlyBoard;
-import com.battleship.model.Ship;
 import com.battleship.model.ShipType;
 import com.battleship.model.ShotResult;
 import com.battleship.model.fog.MarkerStatus;
@@ -37,11 +33,6 @@ import javafx.util.Duration;
 import java.util.Map;
 
 /**
- * Battle screen for local play (vs AI or hotseat), rendered from the human
- * player's perspective. Extends {@link AbstractBattleView}, so all shared
- * battle-screen machinery (weapon bar, ghost preview, fire pipeline, exit)
- * is inherited — this class only contributes the local command bar, the
- * fleet-status side console, and the local/AI shot resolution.
  * Battle screen for local play (vs AI or hotseat), rendered from the current
  * admiral's perspective. Extends {@link AbstractBattleView}, so all shared
  * machinery (weapon console, ghost preview, fire pipeline, exit) is inherited.
@@ -70,13 +61,9 @@ public class LocalBattleView extends AbstractBattleView {
 
     /** Name shown for "my" side: always the human in vs-AI, the current player in hotseat. */
     private String perspectiveName() {
-        return vsAi() ? controller.getPlayerName(1) : controller.getCurrentPlayer().getName();
         return vsAi() ? controller.getPlayerName(1) : controller.getCurrentPlayer().name();
     }
 
-    /** Read-only view of "my" fleet's board (fixes F1/F2). */
-    private ReadOnlyBoard perspectiveBoard() {
-        return vsAi() ? controller.getPlayerBoard(1) : controller.getCurrentPlayer().getOwnBoard();
     /** Read-only view of "my" fleet (V1.1 / V1.2). */
     private FleetReadout perspectiveFleet() {
         return vsAi() ? controller.getPlayerFleet(1) : controller.getCurrentPlayer();
@@ -84,13 +71,9 @@ public class LocalBattleView extends AbstractBattleView {
 
     /** Name shown for the opposing side. */
     private String opponentName() {
-        return vsAi() ? controller.getPlayerName(2) : controller.getOpponent().getName();
         return vsAi() ? controller.getPlayerName(2) : controller.getOpponent().name();
     }
 
-    /** Read-only view of the opposing fleet's board (fixes F1/F2). */
-    private ReadOnlyBoard opponentBoard() {
-        return vsAi() ? controller.getPlayerBoard(2) : controller.getOpponent().getOwnBoard();
     /** The knowledge grid for the current admiral's view of enemy waters (V1.3). */
     private TrackingGrid opponentKnowledge() {
         return vsAi() ? controller.getTrackingGrid(1) : controller.getCurrentPlayer().trackingGrid();
@@ -106,14 +89,11 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected int targetBoardSize() {
-        return opponentBoard().getSize();
         return opponentKnowledge().size();
     }
 
     @Override
     protected boolean isCellAlreadyResolved(Coordinate c) {
-        CellStatus s = opponentBoard().getCellStatus(c);
-        return s == CellStatus.HIT || s == CellStatus.MISS || s == CellStatus.SUNK;
         return opponentKnowledge().isAlreadyShelled(c);
     }
 
@@ -125,9 +105,6 @@ public class LocalBattleView extends AbstractBattleView {
     @Override
     protected void repaintGhostCell(int row, int col) {
         Coordinate c = new Coordinate(row, col);
-        CellStatus status = opponentBoard().getCellStatus(c);
-        if (status == CellStatus.HIT || status == CellStatus.MISS) {
-            enemyGrid.renderShot(c, status);
         MarkerStatus status = opponentKnowledge().observedStatus(c);
         if (status == MarkerStatus.HIT) {
             enemyGrid.renderShot(c, CellStatus.HIT);
@@ -139,8 +116,6 @@ public class LocalBattleView extends AbstractBattleView {
     }
 
     @Override
-    protected void selectLauncher(LauncherType type) {
-        controller.selectLauncher(firingPlayer(), type);
     protected void selectWeapon(Weapon weapon) {
         controller.selectWeapon(firingPlayer(), weapon);
     }
@@ -152,7 +127,6 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected void onNuclearRejected() {
-        controller.selectLauncher(controller.getCurrentPlayer(), LauncherType.DEFAULT);
         controller.selectWeapon(controller.getCurrentPlayer(), WeaponCatalog.defaultWeapon());
         addLogEntry("Launch codes rejected. Nuclear strike aborted \u2014 Default weapon re-armed.", "info");
         refreshLauncherBar();
@@ -170,10 +144,6 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected BoardGridPane createOwnGrid() {
-        ReadOnlyBoard ownBoard = perspectiveBoard();
-        BoardGridPane grid = new BoardGridPane(ownBoard.getSize());
-        renderExistingShots(grid, ownBoard);
-        for (Ship s : ownBoard.getShips()) {
         FleetReadout ownFleet = perspectiveFleet();
         BoardGridPane grid = new BoardGridPane(ownFleet.size());
         renderExistingShots(grid, ownFleet);
@@ -185,7 +155,6 @@ public class LocalBattleView extends AbstractBattleView {
 
     @Override
     protected BoardGridPane createEnemyGrid() {
-        return new BoardGridPane(opponentBoard().getSize());
         TrackingGrid knowledge = opponentKnowledge();
         BoardGridPane grid = new BoardGridPane(knowledge.size());
         for (int r = 0; r < knowledge.size(); r++) {
@@ -276,7 +245,6 @@ public class LocalBattleView extends AbstractBattleView {
     @Override
     protected void resolveShot(Coordinate anchor) {
         Player attacker = controller.getCurrentPlayer();
-        boolean hadNuclearAmmo = attacker.hasAmmo(LauncherType.NUCLEAR);
         boolean hadNuclearAmmo = attacker.hasAmmo(WeaponCatalog.nuclearWarhead());
         LauncherFireResult result = controller.fireLauncher(anchor);
         applyResult(enemyGrid, result);
@@ -307,7 +275,6 @@ public class LocalBattleView extends AbstractBattleView {
         pause.setOnFinished(e -> {
             audio.playFire();
             Player attacker = controller.getCurrentPlayer();
-            boolean hadNuclearAmmo = attacker.hasAmmo(LauncherType.NUCLEAR);
             boolean hadNuclearAmmo = attacker.hasAmmo(WeaponCatalog.nuclearWarhead());
             LauncherFireResult result = controller.fireAiLauncher();
             applyResult(ownGrid, result);
@@ -321,7 +288,6 @@ public class LocalBattleView extends AbstractBattleView {
             maybeTriggerNuclearResupply(attacker, hadNuclearAmmo);
 
             audio.playTurnStart();
-            updateTurnBadge(controller.getCurrentPlayer().getName() + "'S TURN", "turn-badge-player");
             updateTurnBadge(controller.getCurrentPlayer().name() + "'S TURN", "turn-badge-player");
             refreshLauncherBar();
             enemyGrid.setDisable(false);
@@ -336,9 +302,6 @@ public class LocalBattleView extends AbstractBattleView {
             }
         }
         boolean anySunk = !result.sunkShips().isEmpty();
-        for (Ship sunkShip : result.sunkShips()) {
-            grid.renderSunkShip(sunkShip);
-            addLogEntry(sunkShip.getType().name().replace('_', ' ') + " SUNK!", "sunk");
         for (ShipSnapshot sunkShip : result.sunkShips()) {
             grid.renderSunkShip(sunkShip.cells());
             addLogEntry(sunkShip.type().name().replace('_', ' ') + " SUNK!", "sunk");
@@ -349,7 +312,7 @@ public class LocalBattleView extends AbstractBattleView {
             if (anyHit) {
                 addLogEntry("Direct hit!", "hit");
             } else {
-                addLogEntry("Nothing but spray — miss.", "miss");
+                addLogEntry("Nothing but spray \u2014 miss.", "miss");
             }
         }
         refreshShipStatusBar();
@@ -425,16 +388,11 @@ public class LocalBattleView extends AbstractBattleView {
 
     private void refreshShipsLeftLabels() {
         Player current = controller.getCurrentPlayer();
-        Player opponent = controller.getOpponent();
 
-        long ownLeft = current.getOwnBoard().getShips().stream().filter(s -> !s.isSunk()).count();
-        long ownTotal = current.getOwnBoard().getShips().size();
         long ownLeft = current.fleet().stream().filter(s -> !s.isSunk()).count();
         long ownTotal = current.fleet().size();
         ownShipsLeftLabel.setText(ownLeft + "/" + ownTotal + " AFLOAT");
 
-        long enemyLeft = opponent.getOwnBoard().getShips().stream().filter(s -> !s.isSunk()).count();
-        long enemyTotal = opponent.getOwnBoard().getShips().size();
         int enemyLeft = current.trackingGrid().shipsRemaining();
         int enemyTotal = current.trackingGrid().totalEnemyShips();
         enemyShipsLeftLabel.setText(enemyLeft + "/" + enemyTotal + " REMAINING");
@@ -459,7 +417,6 @@ public class LocalBattleView extends AbstractBattleView {
         return radarCard;
     }
 
-    /** Per-ship damage bars for the enemy fleet. */
     /** Fleet composition and confirmed losses for the enemy fleet (Fog of War safe). */
     private VBox buildFleetStatusCard() {
         Label fleetTitle = new Label("ENEMY FLEET STATUS");
@@ -503,9 +460,6 @@ public class LocalBattleView extends AbstractBattleView {
 
     private void refreshShipStatusBar() {
         shipStatusBar.getChildren().clear();
-        Player opponent = controller.getOpponent();
-        for (Ship s : opponent.getOwnBoard().getShips()) {
-            shipStatusBar.getChildren().add(buildFleetStatusRow(s));
         Player current = controller.getCurrentPlayer();
         TrackingGrid knowledge = current.trackingGrid();
         for (Map.Entry<ShipType, Integer> entry : knowledge.enemyFleetComposition().entrySet()) {
@@ -513,16 +467,10 @@ public class LocalBattleView extends AbstractBattleView {
         }
     }
 
-    private HBox buildFleetStatusRow(Ship s) {
-        boolean sunk = s.isSunk();
-        int size = s.getType().getSize();
-        int hits = Math.min(s.getHits(), size);
     private HBox buildFleetStatusRow(ShipType type, int totalCount, TrackingGrid knowledge) {
         long sunkCount = knowledge.confirmedSunk().stream().filter(w -> w.type() == type).count();
         boolean allSunk = sunkCount >= totalCount;
 
-        Label name = new Label(s.getType().name().replace('_', ' '));
-        name.getStyleClass().add(sunk ? "fleet-status-name-sunk" : "fleet-status-name");
         Label name = new Label(type.name().replace('_', ' '));
         name.getStyleClass().add(allSunk ? "fleet-status-name-sunk" : "fleet-status-name");
         name.setPrefWidth(92);
@@ -533,10 +481,8 @@ public class LocalBattleView extends AbstractBattleView {
         track.setPrefSize(trackWidth, 5);
         track.setMaxSize(trackWidth, 5);
 
-        double fillWidth = size == 0 ? 0 : trackWidth * ((double) hits / size);
         double fillWidth = totalCount == 0 ? 0 : trackWidth * ((double) sunkCount / totalCount);
         Region fill = new Region();
-        fill.getStyleClass().add(sunk ? "fleet-bar-fill-sunk" : "fleet-bar-fill");
         fill.getStyleClass().add(allSunk ? "fleet-bar-fill-sunk" : "fleet-bar-fill");
         fill.setPrefSize(fillWidth, 5);
         fill.setMaxSize(fillWidth, 5);
@@ -545,10 +491,8 @@ public class LocalBattleView extends AbstractBattleView {
         StackPane barStack = new StackPane(track, fill);
         StackPane.setAlignment(fill, Pos.CENTER_LEFT);
 
-        Label countLabel = new Label(hits + "/" + size);
         Label countLabel = new Label(sunkCount + "/" + totalCount + " SUNK");
         countLabel.getStyleClass().add("dim-text");
-        countLabel.setPrefWidth(34);
         countLabel.setPrefWidth(60);
 
         HBox row = new HBox(8, name, barStack, countLabel);
@@ -557,22 +501,16 @@ public class LocalBattleView extends AbstractBattleView {
         return row;
     }
 
-    private void renderExistingShots(BoardGridPane grid, ReadOnlyBoard board) {
-        for (int r = 0; r < board.getSize(); r++) {
-            for (int c = 0; c < board.getSize(); c++) {
     private void renderExistingShots(BoardGridPane grid, FleetReadout fleet) {
         for (int r = 0; r < fleet.size(); r++) {
             for (int c = 0; c < fleet.size(); c++) {
                 Coordinate coord = new Coordinate(r, c);
-                CellStatus status = board.getCellStatus(coord);
                 CellStatus status = fleet.cellStatus(coord);
                 if (status == CellStatus.HIT || status == CellStatus.MISS) {
                     grid.renderShot(coord, status);
                 }
             }
         }
-        for (Ship s : board.getShips()) {
-            if (s.isSunk()) grid.renderSunkShip(s);
         for (ShipSnapshot s : fleet.fleet()) {
             if (s.isSunk()) grid.renderSunkShip(s.cells());
         }
@@ -587,7 +525,6 @@ public class LocalBattleView extends AbstractBattleView {
      * auto-resupply countdown (quiz-gated) and top the stock back up on success.
      */
     private void maybeTriggerNuclearResupply(Player player, boolean hadNuclearAmmoBefore) {
-        if (hadNuclearAmmoBefore && !player.hasAmmo(LauncherType.NUCLEAR)) {
         Weapon nuclear = WeaponCatalog.nuclearWarhead();
         if (hadNuclearAmmoBefore && !player.hasAmmo(nuclear)) {
             NuclearResupplyDialog.show(nav.getStage(), () -> {

@@ -2,19 +2,15 @@ package com.battleship.view;
 
 import com.battleship.controller.GameController;
 import com.battleship.model.Coordinate;
-import com.battleship.model.LauncherType;
 import com.battleship.model.Orientation;
 import com.battleship.model.Player;
 import com.battleship.model.weapon.NuclearWarhead;
 import com.battleship.model.weapon.Weapon;
 import com.battleship.view.battle.WeaponConsole;
 import com.battleship.view.quiz.NuclearLaunchDialog;
-import javafx.geometry.Pos;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -25,22 +21,11 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Template Method base for both battle screens (local + network). Owns every
- * shared concern: the weapon bar, orientation toggle, hover ghost preview, the
- * fire-click pipeline (turn gating, live-cell validation, nuclear launch
- * authorization, sound triggers) and the exit confirmation.
- *
- * Subclasses supply only the layout chrome and the polymorphic shot
- * resolution ({@link #resolveShot}), eliminating the former ~60% copy-paste
- * between the two battle screens.
  * Composite view base for both battle screens (local + network).
  * Composes autonomous components (such as {@link WeaponConsole}) and manages
  * the shared targeting ghost preview, fire-click pipeline, and navigation exit.
  */
 public abstract class AbstractBattleView {
-
-    /** Visual state of one weapon button; styling is subclass-supplied. */
-    protected enum LauncherButtonState { DISABLED, SELECTED, ENABLED }
 
     protected final ViewNavigator nav;
     protected final GameController controller;
@@ -64,8 +49,6 @@ public abstract class AbstractBattleView {
 
     /** Assembles the shared battle skeleton. Subclasses customize via hooks only. */
     public final StackPane build() {
-        launcherBar = new HBox(10);
-        launcherBar.setAlignment(Pos.CENTER);
         launcherBar = weaponConsole.node();
         refreshLauncherBar();
 
@@ -127,38 +110,22 @@ public abstract class AbstractBattleView {
     /** Restores one cell after the ghost leaves it. */
     protected abstract void repaintGhostCell(int row, int col);
 
-    /** Applies a launcher selection for the firing player. */
-    protected abstract void selectLauncher(LauncherType type);
     /** Applies a weapon selection for the firing player. */
     protected abstract void selectWeapon(Weapon weapon);
 
     /** UI reaction to a click on an already-shelled area. */
     protected abstract void reportBlockedShot();
 
-    /** UI reaction to rejected nuclear launch codes (re-arm DEFAULT + repaint). */
     /** UI reaction to rejected nuclear launch codes (re-arm default + repaint). */
     protected abstract void onNuclearRejected();
 
-    /** Weapon-button style class per state, e.g. {@code weapon-button-selected}. Subclasses can override if needed (V3). */
-    protected String launcherButtonStyleClass(LauncherButtonState state) {
-        return switch (state) {
-            case DISABLED -> CssClasses.WEAPON_DISABLED;
-            case SELECTED -> CssClasses.WEAPON_SELECTED;
-            case ENABLED  -> CssClasses.WEAPON_ENABLED;
-        };
-    }
-
-    /** Default orientation label text shared across battle views (V4). */
     /** Default orientation label text shared across battle views. */
     protected final String orientationLabelText() {
-        Orientation o = firingPlayer().getLauncherOrientation();
         Orientation o = firingPlayer().weaponOrientation();
         return "Orientation: " + (o.isHorizontal() ? "HORIZONTAL" : "VERTICAL")
-                + "  (R or Right-Click to rotate \u2014 affects Level 2 / Nuclear)";
                 + "  (R or Right-Click to rotate \u2014 affects Salvo / Nuclear)";
     }
 
-    /** Shared shot outcome audio playback (V5). */
     /** Shared shot outcome audio playback. */
     protected final void playResultAudio(boolean anyHit, boolean anySunk) {
         if (anySunk) {
@@ -185,8 +152,6 @@ public abstract class AbstractBattleView {
     private void handleFireClick(Coordinate anchor) {
         if (!canFireNow()) return;
 
-        LauncherType type = firingPlayer().getSelectedLauncher();
-        List<Coordinate> pattern = type.getTargetCells(anchor, firingOrientation());
         Weapon weapon = firingPlayer().selectedWeapon();
         List<Coordinate> pattern = weapon.calculateBlastArea(anchor, firingOrientation());
 
@@ -197,7 +162,6 @@ public abstract class AbstractBattleView {
             return;
         }
 
-        if (type == LauncherType.NUCLEAR) {
         if (weapon instanceof NuclearWarhead) {
             boolean authorized = NuclearLaunchDialog.askAndAwaitAuthorization(enemyGrid.getScene().getWindow());
             if (!authorized) {
@@ -206,7 +170,6 @@ public abstract class AbstractBattleView {
             }
         }
 
-        if (type == LauncherType.NUCLEAR) {
         if (weapon instanceof NuclearWarhead) {
             audio.playNuclear();
         } else {
@@ -217,7 +180,6 @@ public abstract class AbstractBattleView {
     }
 
     protected final Orientation firingOrientation() {
-        return firingPlayer().getLauncherOrientation();
         return firingPlayer().weaponOrientation();
     }
 
@@ -236,8 +198,6 @@ public abstract class AbstractBattleView {
     private void showGhost(int row, int col) {
         if (!canFireNow()) return;
         clearGhost();
-        LauncherType type = firingPlayer().getSelectedLauncher();
-        List<Coordinate> cells = type.getTargetCells(new Coordinate(row, col), firingOrientation());
         Weapon weapon = firingPlayer().selectedWeapon();
         List<Coordinate> cells = weapon.calculateBlastArea(new Coordinate(row, col), firingOrientation());
         int size = enemyGrid.getSize();
@@ -256,10 +216,6 @@ public abstract class AbstractBattleView {
     }
 
     protected final void refreshLauncherBar() {
-        launcherBar.getChildren().clear();
-        for (LauncherType type : LauncherType.values()) {
-            launcherBar.getChildren().add(buildLauncherButton(type));
-        }
         weaponConsole.refresh(
                 firingPlayer(),
                 controller.getSelectedTheater().getBoardSize(),
@@ -270,42 +226,7 @@ public abstract class AbstractBattleView {
                 });
     }
 
-    private Button buildLauncherButton(LauncherType type) {
-        Player player = firingPlayer();
-        int size = controller.getSelectedTheater().getBoardSize();
-        boolean available = type.isAvailableFor(size);
-        int ammo = controller.getAmmoRemaining(player, type);
-        boolean hasAmmo = type == LauncherType.DEFAULT || ammo > 0;
-        boolean enabled = available && hasAmmo && extraWeaponGate();
-
-        String ammoText = type == LauncherType.DEFAULT ? "\u221E" : String.valueOf(ammo);
-        Button b = new Button(type.getLabel() + "  (" + ammoText + ")");
-        b.getStyleClass().add("weapon-button");
-        Image icon = ImageResources.launcherIcon(type);
-        if (icon != null) {
-            ImageView iv = new ImageView(icon);
-            iv.setFitWidth(20);
-            iv.setFitHeight(20);
-            iv.setPreserveRatio(true);
-            b.setGraphic(iv);
-        }
-
-        LauncherButtonState state = !enabled ? LauncherButtonState.DISABLED
-                : player.getSelectedLauncher() == type ? LauncherButtonState.SELECTED
-                : LauncherButtonState.ENABLED;
-        // The static declarations live in .weapon-button; only the state colour is added here.
-        b.getStyleClass().add(launcherButtonStyleClass(state));
-        b.setDisable(!enabled);
-
-        b.setOnAction(e -> {
-            selectLauncher(type);
-            refreshLauncherBar();
-        });
-        return b;
-    }
-
     protected final void toggleOrientation() {
-        firingPlayer().toggleLauncherOrientation();
         firingPlayer().toggleWeaponOrientation();
         onOrientationChanged();
     }
