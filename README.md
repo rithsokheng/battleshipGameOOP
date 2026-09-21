@@ -1,6 +1,5 @@
 # Battleship: Naval Command
 
-A modern Java 21 + JavaFX naval warfare game.
 A modern Java 21 + JavaFX naval warfare game built with strict object-oriented design and clean architecture.
 
 ---
@@ -8,8 +7,6 @@ A modern Java 21 + JavaFX naval warfare game built with strict object-oriented d
 ## Features
 
 ### Game Modes
-- **Single Player (vs AI):** Battle against three distinct AI difficulty tiers.
-- **Pass & Play (Hotseat):** Local two-player mode with a private handoff pass screen between turns.
 - **Single Player (vs AI):** Battle against three distinct AI difficulty tiers (Ensign, Lieutenant, Admiral).
 - **Pass & Play (Hotseat):** Local two-player mode with a private handoff pass screen (`PassScreen`) between turns to maintain fleet secrecy.
 - **LAN Multiplayer ("Play with a Friend"):** Direct peer-to-peer TCP socket connection across local networks:
@@ -17,29 +14,21 @@ A modern Java 21 + JavaFX naval warfare game built with strict object-oriented d
   - Strict Fog-of-War: Real ship placements are never transmitted over the wire; each client is authoritative only over its own board and reports shot outcomes (`MISS`, `HIT`, `SUNK`).
 
 ### Battlefields & Theaters
-- **Coastal Waters (5×5):** Fast skirmish with Patrol Boat (2), Destroyer (2), and Submarine (3).
-- **Open Sea (8×8):** Tactical battle with Destroyer (2), Submarine (3), Cruiser (3), and Battleship (4).
-- **Pacific Theater (10×10):** Full fleet warfare adding the Aircraft Carrier (5).
 - **Quick Match (5×5):** Fast skirmish with Patrol Boat (2) and Submarine (3). Total 7 hits to win.
 - **Standard (8×8):** Tactical engagement with Destroyer (2), Submarine (2), and Battleship (1). Total 14 hits to win.
 - **Classic (10×10):** Full fleet action with Destroyer (2), Submarine (2), Cruiser (1), Battleship (1), and Aircraft Carrier (1). Total 19 hits to win.
 
-### Advanced Weaponry & Launcher System
-- **Default Shell:** Precise 1×1 shot with infinite ammo.
-- **Level 2 Salvo:** 1×3 line barrage available on larger grids (8×8 and 10×10).
 ### Advanced Weaponry & Arsenal System
 - **Standard Shell:** Precise 1×1 shot with infinite ammo.
 - **Salvo Barrage:** 1×3 line barrage available on larger grids (8×8 and 10×10).
 - **Tactical Nuclear Warhead:** 2×3 area devastation available across all theaters.
   - **Launch Code Protocol:** Firing requires answering naval trivia questions to authorize detonation.
-  - **Auto-Resupply:** Automatically initiates a resupply countdown and drill to restock warheads.
   - **Auto-Resupply:** Initiates a resupply drill to restock warheads after usage.
 - **Orientation & Target Preview:** Press **`R`** or **Right-Click** to rotate weapon trajectory with real-time ghost overlay.
 
 ### AI Strategies (Strategy & Composition Pattern)
 - **Ensign (Easy):** Uniform random targeting across unshot coordinates.
 - **Lieutenant (Normal):** Checkerboard parity hunt exploiting minimum ship size (length 2), transitioning to targeted neighbor pursuit upon impact.
-- **Admiral (Hard):** Probability density mapping that computes the number of valid remaining ship configurations for every cell, paired with opportunistic area-weapon bombardment and line-following targeting.
 - **Admiral (Hard):** Probability density mapping that computes valid remaining ship configurations for every cell, paired with opportunistic area-weapon bombardment and line-following targeting.
 
 ### Audio & Visuals
@@ -55,22 +44,12 @@ Strict separation of concerns is enforced: `model` and `ai` contain pure Java do
 
 ```
 com.battleship
-├── model           # Pure domain entities and aggregate roots
-│   ├── AmmoInventory.java     # Centralized launcher ammo tracking
-│   ├── Board.java             # Aggregate root: grid status, ships, shot resolution
-│   ├── CellStatus.java        # Cell enum (EMPTY, SHIP, HIT, MISS, SUNK)
 ├── model           # Pure domain entities, aggregate roots, and value objects
 │   ├── AiPlayer.java          # Machine participant entity
 │   ├── AmmoReadout.java       # Read-only ammo query interface
 │   ├── Arsenal.java           # Centralized launcher ammo tracking
 │   ├── CellStatus.java        # Cell state enum (EMPTY, SHIP, HIT, MISS, SUNK)
 │   ├── Coordinate.java        # Immutable board coordinate (row, col)
-│   ├── GameMode.java          # Mode selector (AI, Hotseat, etc.)
-│   ├── GameState.java         # Game state machine
-│   ├── LauncherType.java      # Polymorphic weapon types with blast patterns
-│   ├── Orientation.java       # Ship/launcher direction enum (replaces raw booleans)
-│   ├── Player.java            # Participant entity (human or AI)
-│   ├── ReadOnlyBoard.java     # Read-only board interface for views (no mutation)
 │   ├── FleetDeployment.java   # Fleet placement state mutator interface
 │   ├── FleetReadout.java      # Read-only fleet query interface
 │   ├── GameMode.java          # Mode selector (AI_EASY, AI_NORMAL, AI_HARD, HOTSEAT, ONLINE)
@@ -81,12 +60,9 @@ com.battleship
 │   ├── Player.java            # Abstract participant base class
 │   ├── PrimaryGrid.java       # Own board state (secret fleet placement and damage)
 │   ├── Ship.java              # Placed ship with idempotent hit tracking
-│   ├── ShipType.java          # Fleet classes (size and traits)
 │   ├── ShipType.java          # Fleet classes (size, asset metadata, traits)
 │   ├── ShotOrder.java         # Shot command record
 │   ├── ShotResult.java        # Outcome record (coordinate, outcome, shipSunk)
-│   ├── Theater.java           # Battlefield configuration presets
-│   └── Turn.java              # Turn ownership enum (replaces raw int index)
 │   ├── ShotTarget.java        # Target coordinate query abstraction
 │   ├── Theater.java           # Battlefield configuration presets (SKIRMISH, ENGAGEMENT, FLEET_ACTION)
 │   ├── Turn.java              # Turn ownership enum (PLAYER_1, PLAYER_2)
@@ -106,8 +82,6 @@ com.battleship
 │       ├── Weapon.java        # Core weapon abstraction (sound, authorization, blast)
 │       └── WeaponCatalog.java # Preconfigured weapon instances
 │
-├── ai              # AI strategy implementations (no UI dependencies)
-│   ├── AIFactory.java         # Strategy factory
 ├── ai              # AI strategy implementations (pure Java domain logic)
 │   ├── AIFactory.java         # Strategy factory with null-safe mode resolution
 │   ├── AIStrategy.java        # Strategy interface
@@ -122,26 +96,19 @@ com.battleship
 ├── controller      # Application services & orchestration
 │   ├── BattleService.java     # Turn management, launcher selection & firing pipeline
 │   ├── GameController.java    # Thin mediator between views and domain services
-│   ├── LauncherFireResult.java# Shot result and sunk ship container
 │   ├── LauncherFireResult.java# Multi-cell shot result and sunk ship container
 │   ├── NetworkFireService.java# Domain mutations of a network shot (ammo, resupply)
 │   ├── PlacementService.java  # Fleet placement legality & auto-deployment
 │   ├── ShotResolution.java    # Resolved multi-cell shot outcome record
-│   └── ShotResolver.java      # Applies launcher blast patterns to the board
 │   └── ShotResolver.java      # Applies launcher blast patterns to target grids
 │
 ├── net             # LAN multiplayer networking (TCP sockets)
-│   ├── EnemyTracker.java      # Fog-of-war observer of opponent's board
 │   ├── NetMessage.java        # Sealed JSON protocol message hierarchy
 │   ├── NetMessageCodec.java   # Gson wire codec with type discriminator
-│   ├── NetUtil.java           # IP and port discovery utilities
-│   ├── NetworkBattleMediator.java # Controller-level logic for network battles
-│   ├── NetworkGameSession.java# Encapsulated session context
 │   ├── NetUtil.java           # LAN IP and ephemeral port discovery utilities
 │   ├── NetworkBattleMediator.java # Controller-level mediation for network battles
 │   ├── NetworkGameSession.java# Encapsulated networking context and turn state
 │   ├── NetworkSession.java    # Socket listener/sender with async callbacks
-│   └── Role.java              # HOST/CLIENT role enum (replaces boolean flag)
 │   └── Role.java              # HOST/CLIENT role enum
 │
 ├── persistence     # Save and load game state (JSON via Gson)
@@ -151,10 +118,6 @@ com.battleship
 │
 └── view            # JavaFX presentation layer
     ├── MainApp.java           # JavaFX Application entry point
-    ├── ViewNavigator.java     # Navigation & audio abstraction (DI seam for views)
-    ├── MainMenuView.java      # Title screen and options
-    ├── GameModeSelectView.java# Mode selector
-    ├── BoardSelectView.java   # Theater selector
     ├── ViewNavigator.java     # Navigation abstraction (DI seam for views)
     ├── AudioProvider.java     # Audio accessor interface
     ├── WindowProvider.java    # Stage accessor interface
@@ -169,7 +132,6 @@ com.battleship
     ├── AbstractBattleView.java# Shared combat command center logic and UI
     ├── LocalBattleView.java   # Main combat view (AI & Hotseat)
     ├── NetworkBattleView.java # Authoritative peer combat view
-    ├── GameOverView.java      # Victory/Defeat screen
     ├── GameOverView.java      # Victory/Defeat screen with MatchStatistics
     ├── NetworkGameOverView.java  # Network match outcome screen
     ├── PassScreen.java        # Hotseat turn privacy screen
@@ -184,12 +146,6 @@ com.battleship
     ├── SoundManager.java      # BGM and SFX player (GameAudio implementation)
     ├── SoundGenerator.java    # Procedural audio synthesizer fallback
     ├── DecorUtil.java         # Facade over the canvas decor renderers
-    ├── decor/                 # Procedural canvas animation renderers
-    │   ├── OceanSceneRenderer.java    # Layered ocean waves and sky gradients
-    │   ├── OceanRibbonRenderer.java   # Flowing ribbon wave accents
-    │   ├── RadarSweepRenderer.java    # Rotating radar sweep animation
-    │   └── CompassWatermark.java      # Decorative compass overlay
-    ├── MenuOverlays.java      # Shared menu overlay effects
     ├── CssClasses.java        # Centralized CSS style class constants
     ├── ImageResources.java    # Asset cache
     ├── QrCodeUtil.java        # ZXing QR code generator
@@ -254,7 +210,6 @@ java -jar target/naval-command-1.0.0.jar
 mvn test
 ```
 
-Unit tests (JUnit 5) run headlessly — no JavaFX runtime required — and cover the AI strategies (`ParityHunterTest`), controller services (`BattleServiceTest`, `ShotResolverTest`, `GameControllerDIPTest`), domain model (`TurnTest`), networking (`NetworkGameSessionTest`, `NetworkBattleMediatorTest`), persistence (`SaveGameServiceTest`), and audio abstractions (`SilentAudioTest`).
 The test suite (JUnit 5) runs headlessly — **no JavaFX runtime or display required** — comprising **38 tests across 14 test suites**:
 - **AI Strategies:** `ParityHunterTest`
 - **Combat & Resolution:** `BattleServiceTest`, `ShotResolverTest`
@@ -269,17 +224,6 @@ The test suite (JUnit 5) runs headlessly — **no JavaFX runtime or display requ
 
 ## Key OOP Principles Implemented
 
-- **Polymorphism over Conditionals:** `LauncherType` enums implement `getTargetCells(...)` directly, eliminating external switch statement logic.
-- **Composition over Inheritance:** `SmartAI` and `HuntTargetAI` compose independent `TargetingQueue` and `ParityHunter` components rather than sharing deep inheritance trees with shadowed state.
-- **Strict Encapsulation & Immutability:** 
-  - `Board.getShips()` and `EnemyTracker.getKnownSunkShips()` return unmodifiable collections (`Collections.unmodifiableList`).
-  - `Ship` hit tracking uses an internal `Set<Coordinate>` for idempotent hit registration, preventing duplicate counting.
-  - `NetworkGameSession` encapsulates networking and state fields behind controlled getters and thread-safe volatile flags.
-- **Read-Only Exposure:** Views query board state through the `ReadOnlyBoard` interface, so cell/ship state can be read but never mutated from the presentation layer.
-- **Interface Segregation & Dependency Inversion:** Views depend on the `ViewNavigator` and `GameAudio` abstractions — the latter composed of the narrow `SfxAudio`, `MusicAudio`, and `AudioSettings` roles — instead of the concrete `MainApp` or the static `SoundManager` singleton. `SilentAudio` serves as a no-op stub injected in tests.
-- **No Primitive Obsession:** Raw flags and indices are replaced with self-documenting enums: `Orientation` (ship/launcher direction), `Turn` (whose turn it is), and `Role` (HOST/CLIENT in network play).
-- **Single Responsibility:** Firing (`BattleService`, `ShotResolver`), placement (`PlacementService`), and network-shot domain logic (`NetworkFireService`, `NetworkBattleMediator`) live in focused services, keeping `GameController` and the views as thin mediators.
-- **Domain Independence:** Model and AI logic execute entirely independently of UI frameworks, making domain logic unit-testable without JavaFX initialization.
 - **Polymorphism over Conditionals (OCP / LSP):**
   - The `Weapon` hierarchy (`StandardShell`, `SalvoBarrage`, `NuclearWarhead`) encapsulates blast pattern generation, ammo constraints, launch authorization protocol (`requiresAuthorization()`), and audio dispatch (`playFiringSound(...)`), eliminating `instanceof` checks and switch statements.
 - **Strict Fog-of-War Encapsulation:**
