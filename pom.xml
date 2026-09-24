@@ -85,7 +85,10 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.battleship.view.MainApp</mainClass>
+                                    <!-- Must NOT extend javafx.application.Application, or the JDK launcher
+                                         rejects the classpath-only fat JAR ("JavaFX runtime components are
+                                         missing"). Launcher delegates to MainApp.main(). -->
+                                    <mainClass>com.battleship.view.Launcher</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
