@@ -112,14 +112,16 @@ public class MainMenuView {
     }
 
     private void showHowToPlay() {
-        StackPane overlay = MenuOverlays.howToPlay(nav.getAudio(),
-                () -> root.getChildren().remove(root.getChildren().size() - 1));
-        root.getChildren().add(overlay);
+        final StackPane[] holder = new StackPane[1];
+        holder[0] = MenuOverlays.howToPlay(nav.getAudio(),
+                () -> root.getChildren().remove(holder[0]));
+        root.getChildren().add(holder[0]);
     }
 
     private void showOptions() {
-        StackPane overlay = MenuOverlays.options(nav.getAudio(),
-                () -> root.getChildren().remove(root.getChildren().size() - 1));
-        root.getChildren().add(overlay);
+        final StackPane[] holder = new StackPane[1];
+        holder[0] = MenuOverlays.options(nav.getAudio(),
+                () -> root.getChildren().remove(holder[0]));
+        root.getChildren().add(holder[0]);
     }
 }

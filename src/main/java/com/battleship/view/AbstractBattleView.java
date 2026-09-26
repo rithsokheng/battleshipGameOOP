@@ -230,6 +230,7 @@ public abstract class AbstractBattleView {
 
     private void confirmExit() {
         if (AlertUtil.showConfirmation(nav.window(), "Exit Game", exitPrompt())) {
+            com.battleship.view.quiz.NuclearResupplyDialog.dismissActive();
             onExitConfirmed();
             audio.stopBgm();
             audio.playMenuMusic();

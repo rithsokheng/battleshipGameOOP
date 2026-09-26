@@ -27,12 +27,25 @@ import javafx.util.Duration;
 public final class NuclearResupplyDialog {
 
     private static final int SECONDS = 30;
+    private static Stage activeStage = null;
 
     private NuclearResupplyDialog() { }
 
+    /** Dismisses any currently running resupply countdown cleanly without resupplying. */
+    public static void dismissActive() {
+        if (activeStage != null) {
+            try {
+                activeStage.close();
+            } catch (Exception ignored) { }
+            activeStage = null;
+        }
+    }
+
     /** Shows the countdown and invokes {@code onResupplied} once it reaches zero. */
     public static void show(Window owner, Runnable onResupplied) {
+        dismissActive();
         Stage stage = new Stage(StageStyle.TRANSPARENT);
+        activeStage = stage;
         if (owner != null) stage.initOwner(owner);
 
         Label icon = new Label("\u2622");
@@ -78,7 +91,12 @@ public final class NuclearResupplyDialog {
 
         stage.setOnHidden(e -> {
             timeline.stop();
-            if (onResupplied != null) onResupplied.run();
+            if (activeStage == stage) {
+                activeStage = null;
+            }
+            if (remaining[0] <= 0 && onResupplied != null) {
+                onResupplied.run();
+            }
         });
 
         layout.setOpacity(0.0);

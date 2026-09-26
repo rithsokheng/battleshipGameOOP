@@ -245,6 +245,7 @@ public class LocalBattleView extends AbstractBattleView {
         refreshLauncherBar();
 
         if (controller.getState() == GameState.GAME_OVER) {
+            NuclearResupplyDialog.dismissActive();
             audio.stopBgm();
             nav.showGameOver(attacker);
             return;
@@ -274,6 +275,7 @@ public class LocalBattleView extends AbstractBattleView {
             applyResult(ownGrid, result);
 
             if (controller.getState() == GameState.GAME_OVER) {
+                NuclearResupplyDialog.dismissActive();
                 audio.stopBgm();
                 nav.showGameOver(attacker);
                 return;
