@@ -717,6 +717,10 @@
 .ship-block {
     -fx-cursor: hand;
 }
+.ship-block-selected {
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, #ffd166, 14, 0.5, 0, 0);
+}
 
 /* ---------- Game-over screens ---------- */
 

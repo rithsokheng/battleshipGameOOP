@@ -177,13 +177,38 @@ public abstract class AbstractShipPlaceView {
 
                 cell.setOnDragExited(event -> clearGhost());
 
+                cell.setOnMouseEntered(event -> {
+                    ShipType selected = dockPane.getSelectedShip();
+                    if (selected != null) {
+                        showGhost(row, col, selected);
+                    }
+                });
+
+                cell.setOnMouseExited(event -> {
+                    if (dockPane.getSelectedShip() != null) {
+                        clearGhost();
+                    }
+                });
+
                 cell.setOnMouseClicked(event -> {
                     if (event.getButton() != MouseButton.PRIMARY) return;
                     Coordinate clicked = new Coordinate(row, col);
-                    boolean removed = controller.removeShipAt(player, clicked);
-                    if (removed) {
-                        audio.playRemoveShip();
-                        refreshAll();
+                    ShipType selected = dockPane.getSelectedShip();
+                    if (selected != null) {
+                        clearGhost();
+                        boolean placed = controller.placeShip(player, selected, clicked, orientation);
+                        if (placed) {
+                            audio.playPlaceShip();
+                            refreshAll();
+                        } else {
+                            shakeCell(cell);
+                        }
+                    } else {
+                        boolean removed = controller.removeShipAt(player, clicked);
+                        if (removed) {
+                            audio.playRemoveShip();
+                            refreshAll();
+                        }
                     }
                 });
 

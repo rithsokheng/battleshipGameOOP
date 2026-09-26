@@ -32,6 +32,8 @@ public class ShipDockPane extends VBox {
     private final GameController controller;
     private final Player player;
     private Orientation orientation = Orientation.HORIZONTAL;
+    private ShipType selectedShipType = null;
+    private java.util.function.Consumer<ShipType> onSelectionChanged;
 
     public ShipDockPane(GameController controller, Player player) {
         this.controller = controller;
@@ -40,6 +42,32 @@ public class ShipDockPane extends VBox {
         setPadding(new Insets(8, 4, 8, 4));
         setAlignment(Pos.TOP_CENTER);
         refresh();
+    }
+
+    public void setOnSelectionChanged(java.util.function.Consumer<ShipType> onSelectionChanged) {
+        this.onSelectionChanged = onSelectionChanged;
+    }
+
+    public ShipType getSelectedShip() {
+        return selectedShipType;
+    }
+
+    public void selectShip(ShipType type) {
+        this.selectedShipType = type;
+        if (onSelectionChanged != null) {
+            onSelectionChanged.accept(selectedShipType);
+        }
+        refresh();
+    }
+
+    public void clearSelection() {
+        if (this.selectedShipType != null) {
+            this.selectedShipType = null;
+            if (onSelectionChanged != null) {
+                onSelectionChanged.accept(null);
+            }
+            refresh();
+        }
     }
 
     public void setOrientation(Orientation orientation) {
@@ -55,6 +83,12 @@ public class ShipDockPane extends VBox {
         getChildren().add(header);
 
         Map<ShipType, Integer> remaining = controller.getRemainingShipCounts(player);
+        if (selectedShipType != null && remaining.getOrDefault(selectedShipType, 0) == 0) {
+            selectedShipType = null;
+            if (onSelectionChanged != null) {
+                onSelectionChanged.accept(null);
+            }
+        }
         for (Map.Entry<ShipType, Integer> entry : remaining.entrySet()) {
             for (int i = 0; i < entry.getValue(); i++) {
                 getChildren().add(buildShipNode(entry.getKey()));
@@ -72,12 +106,14 @@ public class ShipDockPane extends VBox {
         block.setPrefSize(w, h);
         block.setMaxSize(w, h);
 
+        boolean isSelected = type == selectedShipType;
+
         Rectangle frame = new Rectangle(w, h);
         frame.setArcWidth(10);
         frame.setArcHeight(10);
         frame.setFill(sprite == null ? Color.web("#1c4468") : Color.TRANSPARENT);
-        frame.setStroke(Color.web("#63c4ff", 0.85));
-        frame.setStrokeWidth(1.3);
+        frame.setStroke(isSelected ? Color.web("#ffd166") : Color.web("#63c4ff", 0.85));
+        frame.setStrokeWidth(isSelected ? 2.2 : 1.3);
 
         if (sprite != null) {
             // The whole hull rendered as one uncut image, so the ship reads as
@@ -93,10 +129,27 @@ public class ShipDockPane extends VBox {
             block.getChildren().add(iv);
         }
         block.getChildren().add(frame);
-        block.setEffect(new javafx.scene.effect.DropShadow(8, Color.web("#44b8ff", 0.4)));
+
+        if (isSelected) {
+            block.setEffect(new javafx.scene.effect.DropShadow(12, Color.web("#ffd166", 0.85)));
+            block.getStyleClass().addAll("ship-block", "ship-block-selected");
+        } else {
+            block.setEffect(new javafx.scene.effect.DropShadow(8, Color.web("#44b8ff", 0.4)));
+            block.getStyleClass().add("ship-block");
+        }
 
         block.setUserData(type);
-        block.getStyleClass().add("ship-block");
+
+        block.setOnMouseClicked(event -> {
+            if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                if (selectedShipType == type) {
+                    clearSelection();
+                } else {
+                    selectShip(type);
+                }
+                event.consume();
+            }
+        });
 
         block.setOnDragDetected(event -> {
             Dragboard db = block.startDragAndDrop(TransferMode.MOVE);
