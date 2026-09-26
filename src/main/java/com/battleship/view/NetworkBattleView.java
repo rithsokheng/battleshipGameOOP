@@ -150,6 +150,7 @@ public class NetworkBattleView extends AbstractBattleView {
 
         HBox boards = new HBox(28, ownBox, enemyBox);
         boards.setAlignment(Pos.CENTER);
+        VBox.setVgrow(boards, Priority.ALWAYS);
 
         VBox weaponsBox = new VBox(8, launcherBar, orientationLabel);
         weaponsBox.setAlignment(Pos.CENTER);
@@ -169,7 +170,8 @@ public class NetworkBattleView extends AbstractBattleView {
 
         VBox layout = new VBox(14, titleRow, weaponsBox, boards, statusBox);
         layout.setAlignment(Pos.CENTER);
-        layout.setPadding(new Insets(20));
+        layout.setPadding(new Insets(16, 20, 16, 20));
+        VBox.setVgrow(layout, Priority.ALWAYS);
         return layout;
     }
 
@@ -189,11 +191,40 @@ public class NetworkBattleView extends AbstractBattleView {
         javafx.scene.canvas.Canvas ocean = DecorUtil.animatedOceanScene(root, 0.0);
         root.getChildren().add(ocean);
         root.getChildren().add(layout);
+
+        root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.widthProperty().addListener((o, oldW, newW) -> adjustGridSizes(newW.doubleValue(), newScene.getHeight()));
+                newScene.heightProperty().addListener((o, oldH, newH) -> adjustGridSizes(newScene.getWidth(), newH.doubleValue()));
+                adjustGridSizes(newScene.getWidth(), newScene.getHeight());
+            }
+        });
+
         return root;
+    }
+
+    private void adjustGridSizes(double width, double height) {
+        if (width <= 0 || height <= 0 || ownGrid == null || enemyGrid == null) return;
+        int size = ownGrid.getSize();
+
+        // Screen height minus title (~55), weaponsBox (~65), statusBox (~65), card headers (~68), spacing/padding (~60)
+        double availH = height - 310;
+        // Screen width minus padding (40), gap between boards (28), card borders/padding (76)
+        double availW = (width - 144) / 2.0;
+
+        double maxGridPx = Math.min(availW, availH);
+        maxGridPx = Math.max(370.0, Math.min(maxGridPx, 540.0));
+
+        double newCellPx = Math.floor(maxGridPx / size);
+        ownGrid.setCellSize(newCellPx);
+        enemyGrid.setCellSize(newCellPx);
     }
 
     @Override
     protected void onViewShown() {
+        if (nav.getStage() != null && nav.getStage().getScene() != null) {
+            adjustGridSizes(nav.getStage().getScene().getWidth(), nav.getStage().getScene().getHeight());
+        }
         netSession.getSession().setOnMessage(this::handleMessage);
         netSession.getSession().setOnDisconnected(this::handleDisconnect);
         enemyGrid.setDisable(!netSession.isMyTurn());
