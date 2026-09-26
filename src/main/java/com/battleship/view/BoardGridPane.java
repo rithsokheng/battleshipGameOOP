@@ -50,21 +50,67 @@ public class BoardGridPane extends GridPane {
 
     private final int size;
     private final StackPane[][] cells;
-    private final double cellPx;
+    private double cellPx;
 
-    private static double computeCellSize(int size) {
-        if (size <= 5) return 52;
-        if (size <= 8) return 38;
-        return 34;
+    public static double computeCellSize(int size) {
+        if (size <= 5) return 74;
+        if (size <= 8) return 46;
+        return 38;
     }
 
     public BoardGridPane(int size) {
+        this(size, computeCellSize(size));
+    }
+
+    public BoardGridPane(int size, double cellPx) {
         this.size = size;
         this.cells = new StackPane[size][size];
-        this.cellPx = computeCellSize(size);
+        this.cellPx = cellPx;
         setHgap(1);
         setVgap(1);
         build();
+    }
+
+    public double getCellSize() { return cellPx; }
+
+    public void setCellSize(double newCellPx) {
+        if (newCellPx <= 0 || Math.abs(this.cellPx - newCellPx) < 0.5) return;
+        this.cellPx = newCellPx;
+        double span = newCellPx * 0.32;
+        for (int r = 0; r < size; r++) {
+            for (int c = 0; c < size; c++) {
+                StackPane cell = cells[r][c];
+                cell.setPrefSize(newCellPx, newCellPx);
+                cell.setMinSize(newCellPx, newCellPx);
+                cell.setMaxSize(newCellPx, newCellPx);
+                for (javafx.scene.Node node : cell.getChildren()) {
+                    if (node instanceof ImageView iv) {
+                        if (cell.getStyleClass().contains(CELL_SHIP)) {
+                            iv.setFitWidth(newCellPx);
+                            iv.setFitHeight(newCellPx);
+                        } else if (cell.getStyleClass().contains(CELL_MISS)) {
+                            iv.setFitWidth(newCellPx * 0.7);
+                            iv.setFitHeight(newCellPx * 0.7);
+                        } else {
+                            iv.setFitWidth(newCellPx * 0.85);
+                            iv.setFitHeight(newCellPx * 0.85);
+                        }
+                    } else if (node instanceof Line line) {
+                        if (line.getStartX() < 0 && line.getStartY() < 0) {
+                            line.setStartX(-span);
+                            line.setStartY(-span);
+                            line.setEndX(span);
+                            line.setEndY(span);
+                        } else {
+                            line.setStartX(-span);
+                            line.setStartY(span);
+                            line.setEndX(span);
+                            line.setEndY(-span);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void build() {
@@ -73,6 +119,8 @@ public class BoardGridPane extends GridPane {
             for (int c = 0; c < size; c++) {
                 StackPane cell = new StackPane();
                 cell.setPrefSize(cellPx, cellPx);
+                cell.setMinSize(cellPx, cellPx);
+                cell.setMaxSize(cellPx, cellPx);
                 cell.getStyleClass().add(CELL_CLASS);
                 cells[r][c] = cell;
                 add(cell, c, r);
