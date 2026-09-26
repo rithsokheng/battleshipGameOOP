@@ -16,6 +16,8 @@
         <javafx.version>21.0.2</javafx.version>
         <gson.version>2.11.0</gson.version>
         <junit.version>5.10.2</junit.version>
+        <!-- Default classifier names your normal file 'naval-command-1.0.0.jar' -->
+        <jar.classifier></jar.classifier>
     </properties>
 
     <dependencies>
@@ -83,11 +85,11 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <!-- Appends '-windows' to the jar name if the profile is active -->
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>${jar.classifier}</shadedClassifierName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <!-- Must NOT extend javafx.application.Application, or the JDK launcher
-                                         rejects the classpath-only fat JAR ("JavaFX runtime components are
-                                         missing"). Launcher delegates to MainApp.main(). -->
                                     <mainClass>com.battleship.view.Launcher</mainClass>
                                 </transformer>
                             </transformers>
@@ -103,4 +105,40 @@
             </plugin>
         </plugins>
     </build>
+
+    <!-- ADDED PROFILES BLOCK HERE -->
+    <!-- Replace your old profiles block with this one -->
+    <profiles>
+        <profile>
+            <id>build-windows</id>
+            <properties>
+                <!-- Sets the primary platform classifier -->
+                <javafx.platform>win</javafx.platform>
+                <!-- Appends "-windows" to your built JAR file name -->
+                <jar.classifier>windows</jar.classifier>
+            </properties>
+            <dependencies>
+                <!-- Forces Windows native graphics dependencies to load explicitly -->
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-graphics</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>win</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-controls</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>win</classifier>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjfx</groupId>
+                    <artifactId>javafx-fxml</artifactId>
+                    <version>${javafx.version}</version>
+                    <classifier>win</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+
 </project>
