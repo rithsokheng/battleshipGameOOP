@@ -72,4 +72,5 @@ Desktop.ini
 *.properties
 !src/main/resources/*.properties
 /.agents/
+.agent_tasks/
 target/
