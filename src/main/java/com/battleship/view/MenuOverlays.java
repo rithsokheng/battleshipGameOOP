@@ -80,7 +80,7 @@ final class MenuOverlays {
         Label audioHeading = sectionHeading("1. AUDIO & COMMUNICATIONS");
         Slider master = themedSlider(audio.getMasterVolume() * 100);
         Slider sfx = themedSlider(audio.getSfxVolume() * 100);
-        ToggleButton muteAll = new ToggleButton("MUTE ALL");
+        ToggleButton muteAll = new ToggleButton(audio.isMuted() ? "MUTED" : "MUTE ALL");
         muteAll.getStyleClass().add("switch-toggle");
         muteAll.setSelected(audio.isMuted());
 
@@ -88,8 +88,11 @@ final class MenuOverlays {
                 audio.setMasterVolume(val.doubleValue() / 100));
         sfx.valueProperty().addListener((obs, old, val) ->
                 audio.setSfxVolume(val.doubleValue() / 100));
-        muteAll.setOnAction(e ->
-                audio.setMuted(muteAll.isSelected()));
+        muteAll.setOnAction(e -> {
+            boolean m = muteAll.isSelected();
+            audio.setMuted(m);
+            muteAll.setText(m ? "MUTED" : "MUTE ALL");
+        });
 
         GridPane audioGrid = new GridPane();
         audioGrid.setHgap(16);
@@ -109,26 +112,28 @@ final class MenuOverlays {
 
         // --- Graphics & Interface ---
         Label gfxHeading = sectionHeading("2. GRAPHICS & INTERFACE");
+        ToggleGroup resGroup = new ToggleGroup();
         HBox resRow = new HBox(10, rowLabel("\uD83D\uDDA5  RESOLUTION"),
-                segmentedGroup("1080p", "1440p"));
+                segmentedGroupWithToggle(resGroup, "1160x740", "1360x820", "Fullscreen"));
+        ToggleGroup scaleGroup = new ToggleGroup();
         HBox scaleRow = new HBox(10, rowLabel("\uD83C\uDFA8  UI SCALE"),
-                segmentedGroup("Small", "Medium", "Large"));
+                segmentedGroupWithToggle(scaleGroup, "Standard", "Large"));
+        ToggleGroup animGroup = new ToggleGroup();
         HBox animRow = new HBox(10, rowLabel("\u2728  ANIMATIONS"),
-                segmentedGroup("On", "Off"));
+                segmentedGroupWithToggle(animGroup, "On", "Off"));
         VBox gfxBox = new VBox(10, resRow, scaleRow, animRow);
 
         // --- Controls & Shortcuts ---
         Label ctrlHeading = sectionHeading("3. CONTROLS & SHORTCUTS");
         HBox ctrlRow = new HBox(28,
-                keybindPair("\u2328  FIRE (CLICK)", "."),
-                keybindPair("\uD83D\uDDB1  ROTATE (R-CLICK / R)", "R"),
-                keybindPair("\u21C6  SWITCH VIEW (TAB)", "TAB"));
+                keybindPair("\u2328  FIRE", "CLICK"),
+                keybindPair("\uD83D\uDDB1  ROTATE", "R / R-CLICK"),
+                keybindPair("\uD83D\uDEE5  REMOVE SHIP", "CLICK SHIP"));
 
         Button save = new Button("SAVE & APPLY");
         save.getStyleClass().addAll("primary-button", "featured-button");
         save.setPrefWidth(180);
         save.setPrefHeight(42);
-        save.setOnAction(e -> { audio.playClick(); onClose.run(); });
 
         Button close = new Button("CLOSE");
         close.getStyleClass().add("ghost-button");
@@ -153,7 +158,44 @@ final class MenuOverlays {
         VBox.setMargin(title, new Insets(0, 0, 0, 0));
 
         VBox card = wrapCard(content, 620);
+
+        save.setOnAction(e -> {
+            audio.playClick();
+            if (card.getScene() != null && card.getScene().getWindow() instanceof javafx.stage.Stage stage) {
+                if (resGroup.getSelectedToggle() != null) {
+                    String chosenRes = (String) resGroup.getSelectedToggle().getUserData();
+                    if ("1360x820".equals(chosenRes)) {
+                        stage.setFullScreen(false);
+                        stage.setWidth(1360);
+                        stage.setHeight(820);
+                        stage.centerOnScreen();
+                    } else if ("Fullscreen".equals(chosenRes)) {
+                        stage.setFullScreen(true);
+                    } else {
+                        stage.setFullScreen(false);
+                        stage.setWidth(1160);
+                        stage.setHeight(740);
+                        stage.centerOnScreen();
+                    }
+                }
+            }
+            onClose.run();
+        });
+
         return backdrop(card);
+    }
+
+    private static HBox segmentedGroupWithToggle(ToggleGroup group, String... options) {
+        HBox box = new HBox(6);
+        for (int i = 0; i < options.length; i++) {
+            ToggleButton tb = new ToggleButton(options[i]);
+            tb.getStyleClass().add("segmented-toggle");
+            tb.setToggleGroup(group);
+            tb.setUserData(options[i]);
+            if (i == 0) tb.setSelected(true);
+            box.getChildren().add(tb);
+        }
+        return box;
     }
 
     private static Label sectionHeading(String text) {

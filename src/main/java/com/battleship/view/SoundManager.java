@@ -38,6 +38,7 @@ public final class SoundManager implements GameAudio {
 
     // ── State ───────────────────────────────────────────────────────
     private Clip bgmClip;
+    private String currentBgmName;
     private boolean muted = false;
     private double masterVolume = 0.70;
     private double sfxVolume = 0.65;
@@ -102,6 +103,7 @@ public final class SoundManager implements GameAudio {
     public void playBattleMusic() { playBgm("battle-music"); }
 
     public void stopBgm() {
+        currentBgmName = null;
         try {
             if (bgmClip != null) {
                 bgmClip.stop();
@@ -135,7 +137,22 @@ public final class SoundManager implements GameAudio {
     public double getMasterVolume() { return masterVolume; }
     public void setSfxVolume(double v) { sfxVolume = clamp(v); }
     public double getSfxVolume() { return sfxVolume; }
-    public void setMuted(boolean m) { muted = m; if (muted) stopBgm(); else applyBgmVolume(); }
+    public void setMuted(boolean m) {
+        muted = m;
+        if (muted) {
+            try {
+                if (bgmClip != null) {
+                    bgmClip.stop();
+                    bgmClip.close();
+                }
+            } catch (Exception ignored) { }
+            bgmClip = null;
+        } else {
+            if (currentBgmName != null) {
+                playBgm(currentBgmName);
+            }
+        }
+    }
     public boolean isMuted() { return muted; }
     public void toggleMute() { setMuted(!muted); }
 
@@ -168,8 +185,15 @@ public final class SoundManager implements GameAudio {
     // ── Internal: BGM ──────────────────────────────────────────────
 
     private void playBgm(String name) {
+        currentBgmName = name;
         if (muted || initFailed) return;
-        stopBgm();
+        try {
+            if (bgmClip != null) {
+                bgmClip.stop();
+                bgmClip.close();
+            }
+        } catch (Exception ignored) { }
+        bgmClip = null;
         byte[] data = loadWavBytes(name);
         if (data == null) return;
         try {
