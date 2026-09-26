@@ -211,6 +211,7 @@ public class BoardGridPane extends GridPane {
     /** Colours every cell of a sunk hull (not just the triggering hit) and crosses it out. */
     public void renderSunkShip(List<Coordinate> occupiedCells) {
         Image fire = ImageResources.effect("hit-explosion");
+        double span = cellPx * 0.32;
         for (Coordinate c : occupiedCells) {
             StackPane cell = cells[c.getRow()][c.getCol()];
             cell.getChildren().clear();
@@ -222,10 +223,13 @@ public class BoardGridPane extends GridPane {
                 iv.setPreserveRatio(true);
                 cell.getChildren().add(iv);
             }
-            Line diagonal = new Line(-14, -14, 14, 14);
-            diagonal.getStyleClass().add("board-sunk-cross");
-            cell.getChildren().add(diagonal);
-            StackPane.setAlignment(diagonal, Pos.CENTER);
+            Line d1 = new Line(-span, -span, span, span);
+            d1.getStyleClass().add("board-sunk-cross");
+            Line d2 = new Line(-span, span, span, -span);
+            d2.getStyleClass().add("board-sunk-cross");
+            cell.getChildren().addAll(d1, d2);
+            StackPane.setAlignment(d1, Pos.CENTER);
+            StackPane.setAlignment(d2, Pos.CENTER);
         }
     }
 
