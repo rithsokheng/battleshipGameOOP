@@ -177,12 +177,14 @@ public class LocalBattleView extends AbstractBattleView {
         addLogEntry("Select a weapon, then a target on the enemy grid.", "info");
 
         HBox content = new HBox(24, leftColumn, sidePanel);
-        content.setAlignment(Pos.TOP_CENTER);
+        content.setAlignment(Pos.CENTER);
+        VBox.setVgrow(content, Priority.ALWAYS);
 
         HBox commandBar = buildCommandBar(perspectiveName(), opponentName());
         VBox layout = new VBox(16, commandBar, content);
-        layout.setAlignment(Pos.TOP_CENTER);
-        layout.setPadding(new Insets(20));
+        layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(16, 20, 16, 20));
+        VBox.setVgrow(layout, Priority.ALWAYS);
         return layout;
     }
 
@@ -192,8 +194,12 @@ public class LocalBattleView extends AbstractBattleView {
         weaponsCard.setAlignment(Pos.CENTER);
         weaponsCard.getStyleClass().add("side-card");
 
-        VBox leftColumn = new VBox(16, weaponsCard, buildBoardsRow());
-        leftColumn.setAlignment(Pos.TOP_CENTER);
+        HBox boardsRow = buildBoardsRow();
+        VBox.setVgrow(boardsRow, Priority.ALWAYS);
+        boardsRow.setAlignment(Pos.CENTER);
+
+        VBox leftColumn = new VBox(16, weaponsCard, boardsRow);
+        leftColumn.setAlignment(Pos.CENTER);
         HBox.setHgrow(leftColumn, Priority.ALWAYS);
         return leftColumn;
     }
@@ -210,7 +216,7 @@ public class LocalBattleView extends AbstractBattleView {
         refreshShipsLeftLabels();
 
         HBox boardsRow = new HBox(24, ownBox, enemyBox);
-        boardsRow.setAlignment(Pos.TOP_CENTER);
+        boardsRow.setAlignment(Pos.CENTER);
         return boardsRow;
     }
 
@@ -220,11 +226,41 @@ public class LocalBattleView extends AbstractBattleView {
         Canvas ocean = DecorUtil.animatedOceanScene(root, 0.0);
         root.getChildren().add(ocean);
         root.getChildren().add(layout);
+
+        root.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.widthProperty().addListener((o, oldW, newW) -> adjustGridSizes(newW.doubleValue(), newScene.getHeight()));
+                newScene.heightProperty().addListener((o, oldH, newH) -> adjustGridSizes(newScene.getWidth(), newH.doubleValue()));
+                adjustGridSizes(newScene.getWidth(), newScene.getHeight());
+            }
+        });
+
         return root;
+    }
+
+    private void adjustGridSizes(double width, double height) {
+        if (width <= 0 || height <= 0 || ownGrid == null || enemyGrid == null) return;
+        int size = ownGrid.getSize();
+
+        // Screen height minus top bar (~55px), weapons card (~65px), card header/padding (~68px), outer spacing (~52px)
+        double availH = height - 250;
+        // Screen width minus sidePanel (240px), column spacing (24px), layout padding (40px),
+        // board gap (24px), card chrome (76px for both cards) -> ~404px
+        double availW = (width - 404) / 2.0;
+
+        double maxGridPx = Math.min(availW, availH);
+        maxGridPx = Math.max(370.0, Math.min(maxGridPx, 540.0));
+
+        double newCellPx = Math.floor(maxGridPx / size);
+        ownGrid.setCellSize(newCellPx);
+        enemyGrid.setCellSize(newCellPx);
     }
 
     @Override
     protected void onViewShown() {
+        if (nav.getStage() != null && nav.getStage().getScene() != null) {
+            adjustGridSizes(nav.getStage().getScene().getWidth(), nav.getStage().getScene().getHeight());
+        }
         if (controller.isAiTurn()) {
             updateTurnBadge("ENEMY TURN", "turn-badge-enemy");
             enemyGrid.setDisable(true);
@@ -401,6 +437,7 @@ public class LocalBattleView extends AbstractBattleView {
         side.setPrefWidth(240);
         side.setMinWidth(240);
         side.setMaxWidth(240);
+        side.setAlignment(Pos.CENTER);
         return side;
     }
 
