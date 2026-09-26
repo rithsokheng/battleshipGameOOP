@@ -21,14 +21,14 @@ public final class BattleLog {
 
         ScrollPane scroll = new ScrollPane(entries);
         scroll.setFitToWidth(true);
-        scroll.setPrefHeight(240);
+        scroll.setPrefHeight(200);
         scroll.setPannable(true);
         scroll.getStyleClass().add("attack-log-scroll");
 
         Label title = new Label("ATTACK LOG");
         title.getStyleClass().add("side-card-title");
 
-        card = new VBox(12, title, scroll);
+        card = new VBox(10, title, scroll);
         card.getStyleClass().add("side-card");
         VBox.setVgrow(card, Priority.ALWAYS);
     }
@@ -41,7 +41,7 @@ public final class BattleLog {
     public void add(String text, String type) {
         Label entry = new Label(text);
         entry.setWrapText(true);
-        entry.setMaxWidth(220);
+        entry.setMaxWidth(200);
         entry.getStyleClass().addAll("log-entry", "log-entry-" + type);
         entries.getChildren().add(0, entry);
         while (entries.getChildren().size() > MAX_ENTRIES) {

@@ -23,9 +23,11 @@ public class MainApp extends Application implements ViewNavigator {
     @Override
     public void start(Stage primaryStage) {
         this.stage = primaryStage;
-        this.scene = new Scene(new StackPane(), 1000, 700);
+        this.scene = new Scene(new StackPane(), 1160, 740);
         scene.getStylesheets().add(getClass().getResource("/styles/battleship.css").toExternalForm());
         stage.setTitle("Battleship: Naval Command");
+        stage.setMinWidth(1060);
+        stage.setMinHeight(680);
         stage.setScene(scene);
         getAudio().playMenuMusic();
         showMainMenu();

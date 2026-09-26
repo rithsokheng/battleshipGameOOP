@@ -395,16 +395,16 @@ public class LocalBattleView extends AbstractBattleView {
     // ---------- Side console (fleet status + attack log) ----------
 
     private VBox buildSidePanel() {
-        VBox side = new VBox(16, buildRadarCard(), buildFleetStatusCard(), buildAttackLogCard());
-        side.setPrefWidth(260);
-        side.setMinWidth(260);
-        side.setMaxWidth(260);
+        VBox side = new VBox(12, buildRadarCard(), buildFleetStatusCard(), buildAttackLogCard());
+        side.setPrefWidth(240);
+        side.setMinWidth(240);
+        side.setMaxWidth(240);
         return side;
     }
 
     /** Decorative radar sweep. */
     private VBox buildRadarCard() {
-        StackPane radar = DecorUtil.animatedRadarSweep(150);
+        StackPane radar = DecorUtil.animatedRadarSweep(130);
         VBox radarCard = new VBox(radar);
         radarCard.setAlignment(Pos.CENTER);
         radarCard.getStyleClass().add("side-card");
@@ -446,9 +446,9 @@ public class LocalBattleView extends AbstractBattleView {
 
         Label name = new Label(type.name().replace('_', ' '));
         name.getStyleClass().add(allSunk ? "fleet-status-name-sunk" : "fleet-status-name");
-        name.setPrefWidth(92);
+        name.setPrefWidth(84);
 
-        double trackWidth = 70;
+        double trackWidth = 58;
         Region track = new Region();
         track.getStyleClass().add("fleet-bar-track");
         track.setPrefSize(trackWidth, 5);
@@ -466,9 +466,9 @@ public class LocalBattleView extends AbstractBattleView {
 
         Label countLabel = new Label(sunkCount + "/" + totalCount + " SUNK");
         countLabel.getStyleClass().add("dim-text");
-        countLabel.setPrefWidth(60);
+        countLabel.setPrefWidth(54);
 
-        HBox row = new HBox(8, name, barStack, countLabel);
+        HBox row = new HBox(6, name, barStack, countLabel);
         row.getStyleClass().add("fleet-status-row");
         row.setAlignment(Pos.CENTER_LEFT);
         return row;

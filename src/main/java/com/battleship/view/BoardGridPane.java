@@ -48,16 +48,20 @@ public class BoardGridPane extends GridPane {
             GHOST_VALID, GHOST_INVALID, GHOST_TARGET
     };
 
-    private static final int CELL_PX = 42;
-
     private final int size;
     private final StackPane[][] cells;
     private final double cellPx;
 
+    private static double computeCellSize(int size) {
+        if (size <= 5) return 52;
+        if (size <= 8) return 38;
+        return 34;
+    }
+
     public BoardGridPane(int size) {
         this.size = size;
         this.cells = new StackPane[size][size];
-        this.cellPx = size > 10 ? CELL_PX : Math.max(28, 420.0 / size);
+        this.cellPx = computeCellSize(size);
         setHgap(1);
         setVgap(1);
         build();
