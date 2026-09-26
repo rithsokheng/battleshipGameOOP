@@ -141,22 +141,25 @@ public class NetworkBattleView extends AbstractBattleView {
         orientationLabel.getStyleClass().add("dim-text");
         updateOrientationLabel();
 
-        Label ownLabel = new Label("YOUR FLEET");
-        ownLabel.getStyleClass().add("accent-text");
-        Label enemyLabel = new Label("ENEMY WATERS");
-        enemyLabel.getStyleClass().add("accent-text");
-
-        VBox ownBox = new VBox(6, ownLabel, ownGrid);
-        ownBox.setAlignment(Pos.CENTER);
-        VBox enemyBox = new VBox(6, enemyLabel, enemyGrid);
-        enemyBox.setAlignment(Pos.CENTER);
+        VBox ownBox = buildBoardCard("YOUR FLEET", ownGrid);
+        VBox enemyBox = buildBoardCard("ENEMY WATERS", enemyGrid);
 
         fleetStatusLabel = new Label();
         fleetStatusLabel.getStyleClass().add("fleet-status-label");
         refreshFleetStatus();
 
-        HBox boards = new HBox(30, ownBox, enemyBox);
+        HBox boards = new HBox(28, ownBox, enemyBox);
         boards.setAlignment(Pos.CENTER);
+
+        VBox weaponsBox = new VBox(8, launcherBar, orientationLabel);
+        weaponsBox.setAlignment(Pos.CENTER);
+        weaponsBox.getStyleClass().add("side-card");
+        weaponsBox.setPadding(new Insets(10, 16, 10, 16));
+
+        VBox statusBox = new VBox(6, logLabel, fleetStatusLabel);
+        statusBox.setAlignment(Pos.CENTER);
+        statusBox.getStyleClass().add("status-panel");
+        statusBox.setPadding(new Insets(10, 18, 10, 18));
 
         HBox topBar = new HBox(turnLabel);
         topBar.setAlignment(Pos.CENTER);
@@ -164,15 +167,29 @@ public class NetworkBattleView extends AbstractBattleView {
         StackPane titleRow = new StackPane(topBar, exit);
         StackPane.setAlignment(exit, Pos.CENTER_RIGHT);
 
-        VBox layout = new VBox(12, titleRow, launcherBar, orientationLabel, boards, logLabel, fleetStatusLabel);
+        VBox layout = new VBox(14, titleRow, weaponsBox, boards, statusBox);
         layout.setAlignment(Pos.CENTER);
-        layout.setPadding(new Insets(24));
+        layout.setPadding(new Insets(20));
         return layout;
+    }
+
+    private VBox buildBoardCard(String title, BoardGridPane grid) {
+        Label titleLbl = new Label(title);
+        titleLbl.getStyleClass().add("board-card-title");
+        VBox card = new VBox(12, titleLbl, grid);
+        card.getStyleClass().add("board-card");
+        card.setAlignment(Pos.CENTER);
+        card.setPadding(new Insets(16));
+        return card;
     }
 
     @Override
     protected StackPane decorateRoot(Pane layout) {
-        return new StackPane(layout); // network screen has no ocean backdrop
+        StackPane root = new StackPane();
+        javafx.scene.canvas.Canvas ocean = DecorUtil.animatedOceanScene(root, 0.0);
+        root.getChildren().add(ocean);
+        root.getChildren().add(layout);
+        return root;
     }
 
     @Override

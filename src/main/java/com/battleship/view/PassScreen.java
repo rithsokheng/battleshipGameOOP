@@ -60,7 +60,7 @@ public class PassScreen {
         layout.setAlignment(Pos.CENTER);
 
         StackPane root = new StackPane(layout);
-        root.setStyle("-fx-background-color:#081a2d;");
+        root.getStyleClass().add("pass-screen-root");
         return root;
     }
 }

@@ -792,3 +792,7 @@
 .dialog-pane.battleship-alert .button-bar .button:pressed {
     -fx-background-color: #0b223d;
 }
+
+.pass-screen-root {
+    -fx-background-color: #081a2d;
+}
