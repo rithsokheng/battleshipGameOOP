@@ -46,6 +46,6 @@ final class DecorUtil {
 
     /** @see OceanSceneRenderer#lightSeaScene(Region) */
     static Canvas lightSeaScene(Region sizeSource) {
-        return OceanSceneRenderer.animatedOceanScene(sizeSource);
+        return OceanSceneRenderer.lightSeaScene(sizeSource);
     }
 }
